@@ -36,8 +36,20 @@ async function main() {
     if (!process.env.META_PAGE_ACCESS_TOKEN) throw new Error('Chưa cấu hình token, chưa kiểm chứng Meta thật.');
     const version = process.env.META_GRAPH_VERSION || 'v23.0';
     if (!/^v\d+\.\d+$/.test(version)) throw new Error('Graph version không hợp lệ.');
-    await http('https://graph.facebook.com/' + version + '/me?fields=id,name', { Authorization: 'Bearer ' + process.env.META_PAGE_ACCESS_TOKEN });
-    return 'Token đọc được Fanpage. Chưa xác nhận quyền gửi tới khách.';
+    const token = process.env.META_PAGE_ACCESS_TOKEN;
+    const graph = 'https://graph.facebook.com/' + version;
+    // Token Trang trong chế độ phát triển thường chỉ có pages_messaging, không đọc được /me?fields=name.
+    // Vì vậy kiểm tra bằng debug_token: token hợp lệ, là token TRANG và có quyền pages_messaging.
+    const app = await (await http(graph + '/app?fields=id', { Authorization: 'Bearer ' + token })).json() as { id?: string };
+    if (!app.id) throw new Error('Không xác định được ứng dụng của token.');
+    if (!process.env.META_APP_SECRET) throw new Error('Thiếu META_APP_SECRET để kiểm tra token.');
+    const query = new URLSearchParams({ input_token: token, access_token: app.id + '|' + process.env.META_APP_SECRET });
+    const { data } = await (await http(graph + '/debug_token?' + query)).json() as
+      { data?: { is_valid?: boolean; type?: string; profile_id?: string; scopes?: string[] } };
+    if (!data?.is_valid) throw new Error('Token không hợp lệ hoặc App Secret không khớp ứng dụng.');
+    if (data.type !== 'PAGE') throw new Error('Token không phải token Trang (loại ' + data.type + ').');
+    if (!data.scopes?.includes('pages_messaging')) throw new Error('Token thiếu quyền pages_messaging.');
+    return 'Token Trang ' + data.profile_id + ' hợp lệ, có pages_messaging. Chưa gửi tin thật.';
   });
   await check('Sheets', async () => { await sheetsRequest(await sheetsToken()); return 'Service Account đọc được Sheet.'; });
   await check('SMTP', async () => {
