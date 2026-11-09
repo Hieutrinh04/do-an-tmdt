@@ -35,7 +35,7 @@ export function Catalog() {
         <p>Chọn cá hợp với bể của bạn. Xem thông số nuôi và tìm đủ cây, thức ăn, thiết bị để chăm bể mỗi ngày.</p>
         <a className="button" href="#san-pham">Khám phá sản phẩm <span aria-hidden>↘</span></a>
       </div>
-      <div className="hero-art"><img src="/catalog/betta.svg" alt="Minh họa cá Betta vây dài" width={640} height={420} fetchPriority="high" /><span>01 / BETTA</span></div>
+      <div className="hero-art"><img src="/catalog/photos/betta-halfmoon-1.webp" alt="Cá Betta halfmoon chụp trong bể" width={640} height={420} fetchPriority="high" /><span>01 / BETTA</span></div>
     </section>
     <section className="shell section" id="san-pham">
       <div className="section-title"><div><p className="eyebrow">KHÁM PHÁ LONG FISH</p><h2>Cá cảnh và thủy sinh</h2></div>

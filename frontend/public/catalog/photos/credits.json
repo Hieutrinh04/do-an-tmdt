@@ -392,5 +392,47 @@
       "width": 1200,
       "height": 900
     }
+  ],
+  "guppy-full-red": [
+    {
+      "file": "/catalog/photos/guppy-full-red-1.webp",
+      "hash": "c41b133d8bc522387b6b9b7ebc639ef5a7f15435435c9cafa52d2c6bc6731495",
+      "title": "File:Guppy F1 grass W x full red tail F japan 20090821 051.jpg",
+      "author": "Hirase",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Guppy_F1_grass_W_x_full_red_tail_F_japan_20090821_051.jpg",
+      "source": "commons",
+      "width": 1200,
+      "height": 900
+    }
+  ],
+  "den-led": [
+    {
+      "file": "/catalog/photos/den-led-1.webp",
+      "hash": "8863de238bf792bb213416b56a715e7a4a27efdf0506fd041027a4be8a893e80",
+      "title": "File:Led Aquarium Light.jpg",
+      "author": "Lime Huang",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Led_Aquarium_Light.jpg",
+      "source": "commons",
+      "width": 924,
+      "height": 693
+    }
+  ],
+  "sui-oxy": [
+    {
+      "file": "/catalog/photos/sui-oxy-1.webp",
+      "hash": "7956597f0faa768134243b83d14026677c757b04d38aba703aaff0db99b278da",
+      "title": "File:Air pump 2.jpg",
+      "author": "Kobakovivo",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Air_pump_2.jpg",
+      "source": "commons",
+      "width": 1200,
+      "height": 900
+    }
   ]
 }

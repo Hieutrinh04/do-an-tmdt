@@ -81,3 +81,11 @@ RAM ghi nhận trước: backend 50,58 MiB, frontend 8,734 MiB, n8n 233,1 MiB tr
 - **verify:all:** lint, build, test, audit production và Playwright PASS. Bước integrations FAIL vì Messenger, Sheets và SMTP chưa có credential thật. Khi trỏ `CHECK_BASE_URL` về stack kiểm thử, DB, ảnh và n8n đều OK; ba mục còn lại vẫn FAIL đúng thiết kế.
 - **Báo cáo đồ án:** `docs/bao-cao/` gồm 00–06, tài liệu tham khảo, kịch bản video 5 phút và các sơ đồ Mermaid nguồn trong `docs/bao-cao/hinh/`. Chưa xuất PNG/SVG vì bước dựng `@mermaid-js/mermaid-cli` không được phép chạy trong phiên này; có thể xuất sau bằng `npx @mermaid-js/mermaid-cli`.
 - **Đóng gói:** `git init`, `.gitignore` đã loại `.env`, `data/`, `node_modules`, `dist`, backup và `*.db*`. Quét secret không thấy khóa thật; kết quả dương tính giả đến từ ảnh base64 trong báo cáo Lighthouse. `README.md` gốc đã thêm. Chưa push lên remote nào.
+
+## Cập nhật ảnh thật (09/11/2026, buổi tối)
+
+- Thêm ảnh Wikimedia Commons đã xem và xác nhận đúng sản phẩm cho **Guppy Full Red** (CC BY-SA 3.0), **Đèn LED thủy sinh** (CC BY-SA 3.0) và **Bộ sủi oxy** (CC BY 4.0). Các ảnh này được tải và render qua pipeline `images:fetch`, có ghi nguồn trong `credits.json`.
+- Ảnh giới thiệu trang chủ đổi từ SVG minh họa sang ảnh cá Betta halfmoon thật (đã có ghi nguồn).
+- Không dùng: ảnh "Koi-smic" (thực ra là ảnh thiên văn), ảnh máy sưởi trong ấm nước, ảnh hồ tự nhiên cho Artemia, các ảnh bể/cây/tôm không đúng sản phẩm.
+- Còn 7 sản phẩm chỉ có SVG (Betta Plakat Koi, Koi mini, Hạt nổi Betta, Artemia sấy, Bể kính 40 cm, Sưởi có chỉnh nhiệt, Vi sinh): Wikimedia Commons không có ảnh CC phù hợp đã tìm được. Cần chụp hoặc mua ảnh có quyền sử dụng.
+- Kiểm thử sau thay đổi: lint PASS; backend 122/122; Playwright 19 passed, 1 skipped trên stack làm mới.

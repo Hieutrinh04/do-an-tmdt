@@ -63,5 +63,14 @@ export const catalogPhotos: Record<string, string[]> = {
   "ca-la-han": [
     "/catalog/photos/ca-la-han-1.webp",
     "/catalog/photos/ca-la-han-2.webp"
+  ],
+  "guppy-full-red": [
+    "/catalog/photos/guppy-full-red-1.webp"
+  ],
+  "den-led": [
+    "/catalog/photos/den-led-1.webp"
+  ],
+  "sui-oxy": [
+    "/catalog/photos/sui-oxy-1.webp"
   ]
 };
