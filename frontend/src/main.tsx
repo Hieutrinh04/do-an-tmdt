@@ -3,6 +3,13 @@ import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-do
 import { lazy, Suspense, useEffect } from 'react';
 import { Catalog, ProductPage } from './catalog';
 import { Checkout, Confirm, Track } from './checkout';
+import '@fontsource/be-vietnam-pro/400.css';
+import '@fontsource/be-vietnam-pro/500.css';
+import '@fontsource/be-vietnam-pro/600.css';
+import '@fontsource/be-vietnam-pro/700.css';
+import '@fontsource/bricolage-grotesque/700.css';
+import '@fontsource/bricolage-grotesque/800.css';
+import '@fontsource/patrick-hand/400.css';
 import './style.css';
 import { CreditsPage } from './photos';
 
@@ -14,7 +21,7 @@ function StoreLayout() {
   if (psid && /^\d{1,40}$/.test(psid)) { sessionStorage.setItem('longFish.psid', psid); sessionStorage.setItem('longFish.context', new URLSearchParams(search).get('context') || ''); }
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return <>
-    <div className="notice">LONG FISH · CÁ CẢNH VÀ THỦY SINH</div>
+    <div className="notice">Cá sống được đóng gói riêng khi giao · Xem cam kết cá sống ở trang từng sản phẩm</div>
     <header className="header"><div className="shell nav">
       <Link className="brand" to="/"><img src="/fish.svg" alt="" />Long Fish</Link>
       <nav aria-label="Điều hướng chính"><Link to="/">Cửa hàng</Link><Link to="/track">Tra cứu</Link><Link to="/checkout">Giỏ hàng ↗</Link></nav>

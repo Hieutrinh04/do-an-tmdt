@@ -35,7 +35,9 @@ export function Catalog() {
         <p>Chọn cá hợp với bể của bạn. Xem thông số nuôi và tìm đủ cây, thức ăn, thiết bị để chăm bể mỗi ngày.</p>
         <a className="button" href="#san-pham">Khám phá sản phẩm <span aria-hidden>↘</span></a>
       </div>
-      <div className="hero-art"><img src="/catalog/photos/betta-halfmoon-1.webp" alt="Cá Betta halfmoon chụp trong bể" width={640} height={420} fetchPriority="high" /><span>01 / BETTA</span></div>
+      <div className="hero-art tank"><img src="/catalog/photos/betta-halfmoon-1.webp" alt="Cá Betta halfmoon chụp trong bể" width={640} height={420} fetchPriority="high" />
+        <span className="bubbles" aria-hidden="true"><i /><i /><i /><i /><i /><i /></span>
+        <Link className="tank-tag" to="/product/betta-halfmoon">Betta Halfmoon<small>Xem cá →</small></Link></div>
     </section>
     <section className="shell section" id="san-pham">
       <div className="section-title"><div><p className="eyebrow">KHÁM PHÁ LONG FISH</p><h2>Cá cảnh và thủy sinh</h2></div>
@@ -53,8 +55,8 @@ export function Catalog() {
         const available = product.variants.filter(variant => variant.stock >= variant.minQty);
         const stock = available.length ? available.some(variant => variant.stock > variant.minQty + 4) ? 'Còn hàng' : 'Sắp hết' : 'Hết hàng';
         return <Link className="product-card" key={product.id} to={'/product/' + product.slug}>
-          <div className="product-art"><ProductImage slug={product.slug} source={product.images[0]} thumbnail alt={product.name} /><span className={'badge ' + (stock === 'Còn hàng' ? '' : 'muted')}>{stock}</span></div>
-          <p className="eyebrow">{product.category}</p><h3>{product.name}</h3><span>{money(product.price)}</span>
+          <div className="product-art tank"><ProductImage slug={product.slug} source={product.images[0]} thumbnail alt={product.name} /><span className={'badge stock-' + (stock === 'Còn hàng' ? 'in' : stock === 'Sắp hết' ? 'low' : 'out')}>{stock}</span></div>
+          <span className="price-tag">{money(product.price)}</span><p className="eyebrow">{product.category}</p><h3>{product.name}</h3>
         </Link>;
       })}</div>
     </section>
@@ -103,7 +105,7 @@ export function ProductPage() {
   return <section className="shell section">
     <Link to="/" className="back">← Cửa hàng</Link>
     <div className="detail">
-      <div><div className="product-art"><ProductImage slug={product.slug} source={product.images[photo]} alt={product.name} loading="eager" /></div>
+      <div><div className="product-art tank"><ProductImage slug={product.slug} source={product.images[photo]} alt={product.name} loading="eager" /></div>
         <PhotoCredit slug={product.slug} file={product.images[photo]} />
         {product.images.length > 1 && <div className="filters">{product.images.map((src, i) => <button key={i} aria-pressed={i === photo} onClick={() => setPhoto(i)}>Ảnh {i + 1}</button>)}</div>}</div>
       <div className="detail-copy"><p className="eyebrow">{product.category}</p><h1>{product.name}</h1>
