@@ -1,0 +1,3 @@
+ALTER TABLE "ProductVariant" ADD COLUMN "lowStockThreshold" INTEGER NOT NULL DEFAULT 5;
+ALTER TABLE "OrderStatusLog" ADD COLUMN "action" TEXT NOT NULL DEFAULT 'status';
+ALTER TABLE "OrderStatusLog" ADD COLUMN "detail" TEXT NOT NULL DEFAULT '';

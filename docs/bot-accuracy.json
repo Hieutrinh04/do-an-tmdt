@@ -1,0 +1,87 @@
+{
+  "at": "2026-11-09T10:11:36.806Z",
+  "cases": 88,
+  "passed": 88,
+  "accuracy": 100,
+  "groups": [
+    {
+      "group": "Chào hỏi",
+      "total": 10,
+      "passed": 10,
+      "accuracy": 100
+    },
+    {
+      "group": "Giá",
+      "total": 6,
+      "passed": 6,
+      "accuracy": 100
+    },
+    {
+      "group": "Ảnh",
+      "total": 5,
+      "passed": 5,
+      "accuracy": 100
+    },
+    {
+      "group": "Gợi ý",
+      "total": 16,
+      "passed": 16,
+      "accuracy": 100
+    },
+    {
+      "group": "Tồn kho",
+      "total": 5,
+      "passed": 5,
+      "accuracy": 100
+    },
+    {
+      "group": "Chăm sóc",
+      "total": 6,
+      "passed": 6,
+      "accuracy": 100
+    },
+    {
+      "group": "Vận chuyển/DOA",
+      "total": 9,
+      "passed": 9,
+      "accuracy": 100
+    },
+    {
+      "group": "Tra cứu",
+      "total": 5,
+      "passed": 5,
+      "accuracy": 100
+    },
+    {
+      "group": "Nhân viên",
+      "total": 6,
+      "passed": 6,
+      "accuracy": 100
+    },
+    {
+      "group": "Không hiểu",
+      "total": 5,
+      "passed": 5,
+      "accuracy": 100
+    },
+    {
+      "group": "An toàn",
+      "total": 7,
+      "passed": 7,
+      "accuracy": 100
+    },
+    {
+      "group": "Thông tin thiếu",
+      "total": 4,
+      "passed": 4,
+      "accuracy": 100
+    },
+    {
+      "group": "Attachment",
+      "total": 4,
+      "passed": 4,
+      "accuracy": 100
+    }
+  ],
+  "method": "Actual handleMessage with isolated seeded SQLite; Messenger transport mocked, no real messages"
+}

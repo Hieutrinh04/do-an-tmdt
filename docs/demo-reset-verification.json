@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-09T07:57:31.514Z",
+  "project": "long-fish-restore-20261109144601",
+  "ordersRemoved": 16,
+  "productsRemoved": 5,
+  "uploadsArchived": 1,
+  "remainingOrders": 32,
+  "remainingProducts": 27,
+  "repeatedResetRemoved": 0,
+  "withoutYesExitCode": 1,
+  "canonicalProductsImagesStocksMatchSource": {
+    "count": 27,
+    "sha256": "3298805bc3a0e46a8f1f66e025d3cb79b5af12a1519ca9cb262e03eecc9d0ddf"
+  }
+}

@@ -1,0 +1,24 @@
+services:
+  postgres:
+    profiles: [postgres]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: long_fish
+      POSTGRES_USER: long_fish
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD for the postgres profile}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U long_fish -d long_fish]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  backend:
+    environment:
+      DATABASE_URL: ${POSTGRES_DATABASE_URL:?Set POSTGRES_DATABASE_URL for the postgres profile}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

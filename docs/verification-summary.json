@@ -1,0 +1,43 @@
+{
+  "at": "2026-11-09T07:53:05.911Z",
+  "results": [
+    {
+      "step": "lint",
+      "result": "PASS",
+      "note": ""
+    },
+    {
+      "step": "build",
+      "result": "PASS",
+      "note": ""
+    },
+    {
+      "step": "test",
+      "result": "PASS",
+      "note": ""
+    },
+    {
+      "step": "audit prod",
+      "result": "PASS",
+      "note": ""
+    },
+    {
+      "step": "Playwright",
+      "result": "PASS",
+      "note": ""
+    },
+    {
+      "step": "integrations",
+      "result": "FAIL",
+      "note": ""
+    }
+  ],
+  "playwright": {
+    "startTime": "2026-11-09T07:51:43.456Z",
+    "duration": 79426.41100000001,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

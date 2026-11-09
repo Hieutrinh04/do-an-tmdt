@@ -1,0 +1,56 @@
+# Compose >=2.24.4. Select exactly one profile: tls or tunnel.
+services:
+  backend:
+    environment:
+      MOCK_INTEGRATIONS: ${MOCK_INTEGRATIONS:-false}
+      SEED_DEMO: "false"
+      PUBLIC_BASE_URL: https://${PUBLIC_DOMAIN:?Set PUBLIC_DOMAIN}
+      SITE_URL: https://${PUBLIC_DOMAIN}
+      FRONTEND_ORIGIN: https://${PUBLIC_DOMAIN}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY}
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:?Set N8N_WEBHOOK_SECRET}
+      BANK_WEBHOOK_SECRET: ${BANK_WEBHOOK_SECRET:-}
+  frontend:
+    ports: !reset []
+  n8n:
+    ports: !reset []
+    environment:
+      MOCK_INTEGRATIONS: ${MOCK_INTEGRATIONS:-false}
+      WEBHOOK_URL: https://${PUBLIC_DOMAIN}/
+      N8N_SECURE_COOKIE: "true"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY}
+      N8N_PROXY_HOPS: "2"
+  gateway:
+    image: nginx:alpine
+    mem_limit: 128m
+    restart: unless-stopped
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+    volumes: [./deploy/gateway.conf:/etc/nginx/conf.d/default.conf:ro]
+    depends_on: [frontend, backend, n8n]
+  caddy:
+    profiles: [tls]
+    image: caddy:2-alpine
+    mem_limit: 192m
+    restart: unless-stopped
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+    volumes: [./deploy/Caddyfile:/etc/caddy/Caddyfile:ro, caddy-data:/data, caddy-config:/config]
+    depends_on: [gateway]
+  cloudflared:
+    profiles: [tunnel]
+    image: cloudflare/cloudflared:latest
+    mem_limit: 192m
+    restart: unless-stopped
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+    command: [tunnel, --no-autoupdate, run]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on: [gateway]
+volumes:
+  caddy-data:
+  caddy-config:

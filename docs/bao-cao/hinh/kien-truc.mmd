@@ -1,0 +1,14 @@
+flowchart LR
+  Customer[Khách] --> Page[Fanpage Messenger]
+  Customer --> Web[Website React]
+  Page --> WF1[n8n WF1 chatbot]
+  WF1 --> API[Express API]
+  Web --> API
+  Admin[Người bán] --> Web
+  API --> DB[(SQLite hoặc PostgreSQL qua Prisma)]
+  API --> Uploads[(Volume ảnh)]
+  DB --> Outbox[Tiến trình outbox]
+  Outbox --> WF23[n8n WF2, WF3, WF4]
+  WF23 --> Sheets[Google Sheets hoặc CSV]
+  WF23 --> Mail[SMTP hoặc log mock]
+  WF23 --> API

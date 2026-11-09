@@ -1,0 +1,113 @@
+[
+  {
+    "stage": "1",
+    "at": "2026-11-09T08:13:01.857Z",
+    "exitCode": 1,
+    "results": [
+      {
+        "step": "lint",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "build",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "test",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "audit prod",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "Playwright",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "integrations",
+        "result": "FAIL",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "stage": "2",
+    "at": "2026-11-09T08:17:16.715Z",
+    "exitCode": 1,
+    "results": [
+      {
+        "step": "lint",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "build",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "test",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "audit prod",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "Playwright",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "integrations",
+        "result": "FAIL",
+        "note": ""
+      }
+    ]
+  },
+  {
+    "stage": "3",
+    "at": "2026-11-09T08:25:40.989Z",
+    "exitCode": 1,
+    "results": [
+      {
+        "step": "lint",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "build",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "test",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "audit prod",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "Playwright",
+        "result": "PASS",
+        "note": ""
+      },
+      {
+        "step": "integrations",
+        "result": "FAIL",
+        "note": ""
+      }
+    ]
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "name": "long-fish",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present && tsc -p scripts/images/tsconfig.json",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test -w backend && vitest run scripts/images/sources.test.ts",
+    "db:setup": "npm run db:setup -w backend",
+    "simulate": "tsx scripts/simulate-messenger.ts",
+    "images:fetch": "tsx scripts/images/fetch-images.ts",
+    "images:apply": "tsx scripts/images/apply-images.ts",
+    "test:e2e": "tsx scripts/test-e2e.ts",
+    "messenger:setup": "tsx scripts/setup-messenger-profile.ts",
+    "sheets:init": "tsx scripts/init-sheets.ts",
+    "check:integrations": "tsx scripts/check-integrations.ts",
+    "db:backup": "tsx scripts/db-backup.ts",
+    "test:ui": "playwright test",
+    "verify:all": "node scripts/verify-all.cjs",
+    "demo:reset": "tsx scripts/demo-reset.ts",
+    "lighthouse": "node scripts/lighthouse.cjs",
+    "docker:cleanup-temp": "tsx scripts/docker-cleanup-temp.ts",
+    "smoke:public": "tsx scripts/smoke-public.ts",
+    "backup:rotate": "tsx scripts/backup-rotate.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "deepmerge-ts": "8.0.2",
+    "lighthouse": "^12.8.2",
+    "sharp": "^0.35.5"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2"
+  }
+}

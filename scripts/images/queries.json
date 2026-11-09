@@ -1,0 +1,284 @@
+{
+  "betta-halfmoon": {
+    "terms": [
+      "Betta splendens halfmoon",
+      "halfmoon betta",
+      "half moon betta"
+    ],
+    "approved": [
+      "File:DVJ Betta splendens 004.jpg",
+      "File:Halfmoon Betta Female - Melisandre.jpg"
+    ]
+  },
+  "betta-plakat-koi": {
+    "terms": [
+      "Betta plakat koi",
+      "koi betta plakat",
+      "koi betta"
+    ],
+    "approved": [],
+    "reviewNote": "Cần ảnh cá Plakat đuôi ngắn có họa tiết koi rõ và giấy phép thương mại.",
+    "photoAdvice": "Chụp ngang cá đuôi ngắn, rõ mảng trắng đỏ đen trên thân. Nền bể sạch, thêm góc nghiêng."
+  },
+  "betta-crowntail": {
+    "terms": [
+      "Betta splendens crowntail",
+      "crowntail betta",
+      "crown tail betta"
+    ],
+    "approved": [
+      "File:Betta splendens (w) dunkelrot ct.JPG"
+    ]
+  },
+  "guppy-fancy": {
+    "terms": [
+      "Poecilia reticulata guppy",
+      "Poecilia reticulata guppy fancy",
+      "Poecilia reticulata male",
+      "fancy guppy"
+    ],
+    "approved": [
+      "File:Guppy red IMG 0829.jpg",
+      "File:Guppy red male.jpg"
+    ]
+  },
+  "guppy-full-red": {
+    "terms": [
+      "guppy full red",
+      "Poecilia reticulata red guppy",
+      "red guppy"
+    ],
+    "approved": [],
+    "reviewNote": "Các ảnh guppy đỏ tìm được chưa cho thấy thân và đuôi đều đỏ đúng dòng Full Red.",
+    "photoAdvice": "Chụp ngang cá đực, thấy rõ thân và đuôi đều đỏ. Thêm ảnh vây xòe."
+  },
+  "guppy-snake-skin": {
+    "terms": [
+      "guppy snakeskin",
+      "guppy cobra snakeskin",
+      "Poecilia reticulata snakeskin"
+    ],
+    "approved": [
+      "File:Cobra Guppy (Poecilia reticulata).JPG"
+    ]
+  },
+  "neon-tetra": {
+    "terms": [
+      "Paracheirodon innesi neon tetra",
+      "Paracheirodon innesi"
+    ],
+    "approved": [
+      "File:Neonsalmler Paracheirodon innesi.jpg",
+      "File:Paracheirodon innesi 01.jpg",
+      "File:Paracheirodon innesi (aka).jpg"
+    ]
+  },
+  "cardinal-tetra": {
+    "terms": [
+      "Paracheirodon axelrodi cardinal tetra",
+      "Paracheirodon axelrodi"
+    ],
+    "approved": [
+      "https://www.inaturalist.org/photos/258997729",
+      "https://www.inaturalist.org/photos/56732177",
+      "File:Cardinal Paracheirodon axelrodi (2).jpg"
+    ],
+    "openverseTerm": "Paracheirodon axelrodi"
+  },
+  "molly-den": {
+    "terms": [
+      "black molly Poecilia sphenops",
+      "black molly"
+    ],
+    "approved": [
+      "File:Black molly1.JPG"
+    ]
+  },
+  "platy-do": {
+    "terms": [
+      "red platy Xiphophorus maculatus",
+      "red platy"
+    ],
+    "approved": [
+      "File:Red wag platy.JPG",
+      "File:Red coral platy.jpg"
+    ]
+  },
+  "ca-vang-ranchu": {
+    "terms": [
+      "Carassius auratus ranchu",
+      "ranchu goldfish"
+    ],
+    "approved": [
+      "File:Goldfish Ranchu 2.jpg",
+      "File:Ranchu.JPG",
+      "File:Blue Ranchu.jpg"
+    ]
+  },
+  "ca-vang-oranda": {
+    "terms": [
+      "Carassius auratus oranda",
+      "oranda goldfish"
+    ],
+    "approved": [
+      "File:WhiteFaced Oranda (side).jpg",
+      "File:(Carassius auratus) Red cap oranda at Visakhapatnam, India 01.JPG"
+    ]
+  },
+  "koi-mini": {
+    "terms": [
+      "juvenile koi Cyprinus carpio",
+      "young koi fish",
+      "koi fry",
+      "koi tosai",
+      "one year old koi",
+      "shiro utsuri koi",
+      "kinki utsuri koi"
+    ],
+    "approved": [],
+    "reviewNote": "Hai ảnh có xác nhận là koi non chỉ đạt 375 × 500 px. Cần ảnh koi non có cạnh ngắn ít nhất 600 px.",
+    "photoAdvice": "Chụp cá non từ trên và ngang, đặt thước ngoài bể để thấy cỡ 7–9 cm."
+  },
+  "ca-la-han": {
+    "terms": [
+      "flowerhorn cichlid",
+      "flowerhorn fish"
+    ],
+    "approved": [
+      "File:Flowerhorn cichlid.jpg",
+      "File:250823 Flowerhorn cichlid.jpg"
+    ]
+  },
+  "ca-than-tien": {
+    "terms": [
+      "Pterophyllum scalare freshwater angelfish",
+      "Pterophyllum scalare"
+    ],
+    "approved": [
+      "File:Pterophyllum scalare 03.jpg",
+      "File:Pterophyllum scalare (freshwater angelfish) 1 (15719206915).jpg",
+      "File:Pterophyllum scalare panda.jpg"
+    ]
+  },
+  "ca-dia": {
+    "terms": [
+      "Symphysodon discus aquarium",
+      "Symphysodon"
+    ],
+    "approved": [
+      "https://www.inaturalist.org/photos/30063471",
+      "https://www.inaturalist.org/photos/30063744",
+      "File:Discus (Symphysodon aequifasciatus) blue hybrid (13532960545).jpg"
+    ],
+    "openverseTerm": "Symphysodon discus"
+  },
+  "ca-chuot-dong": {
+    "terms": [
+      "Corydoras aeneus bronze corydoras",
+      "Corydoras aeneus"
+    ],
+    "approved": [
+      "https://www.flickr.com/photos/44949218@N02/53598046813",
+      "https://www.flickr.com/photos/44949218@N02/53598165179",
+      "File:Corydoras aeneus by Ark.jpg"
+    ],
+    "openverseTerm": "Corydoras aeneus"
+  },
+  "pleco-bristlenose": {
+    "terms": [
+      "Ancistrus bristlenose pleco",
+      "Ancistrus aquarium"
+    ],
+    "approved": [
+      "File:Bristlenose Pleco Male & Female.jpg"
+    ]
+  },
+  "hat-betta": {
+    "terms": [
+      "betta fish pellets",
+      "aquarium fish food pellets",
+      "fish food granules"
+    ],
+    "approved": [],
+    "reviewNote": "Ảnh thức ăn viên chung chưa xác nhận là hạt nổi cỡ nhỏ dành cho Betta.",
+    "photoAdvice": "Chụp gói/hộp và hạt trên đĩa trắng. Thêm ảnh hạt nổi trong nước."
+  },
+  "artemia-say": {
+    "terms": [
+      "freeze dried artemia fish food",
+      "dried brine shrimp fish food",
+      "freeze dried brine shrimp"
+    ],
+    "approved": [],
+    "reviewNote": "Ảnh Artemia tìm được chưa xác nhận là sản phẩm đã sấy.",
+    "photoAdvice": "Chụp bao bì và phần artemia đã sấy trên nền trắng, thêm góc cận kết cấu."
+  },
+  "be-kinh-40": {
+    "terms": [
+      "small rectangular glass aquarium empty",
+      "glass aquarium tank rectangular",
+      "nano aquarium 40 cm"
+    ],
+    "approved": [],
+    "reviewNote": "Ảnh bể trống tìm được có cạnh ngắn 471 px. Ảnh bể nano đã trang trí không minh họa đúng bể trống.",
+    "photoAdvice": "Chụp bể trống chính diện và góc 45 độ, nền sáng, thấy đủ cạnh kính và kích thước."
+  },
+  "loc-thac": {
+    "terms": [
+      "hang on back aquarium filter",
+      "hang-on aquarium filter",
+      "aquarium waterfall filter"
+    ],
+    "approved": [
+      "File:Rucksackfilter.forAqualium.GEX.slim.filter.ss01.jpg"
+    ]
+  },
+  "den-led": {
+    "terms": [
+      "LED aquarium light",
+      "aquarium LED lamp"
+    ],
+    "approved": [],
+    "reviewNote": "Ảnh phù hợp về công dụng có logo thương hiệu dễ đọc trên thân đèn.",
+    "photoAdvice": "Chụp riêng đèn trên nền trắng và đèn đang gắn trên bể, thấy gá lắp."
+  },
+  "suoi-be-ca": {
+    "terms": [
+      "aquarium heater thermostat",
+      "aquarium heater"
+    ],
+    "approved": [],
+    "reviewNote": "Ảnh ứng viên cho thấy thanh sưởi chìm, chưa xác nhận có núm chỉnh nhiệt.",
+    "photoAdvice": "Chụp toàn thanh sưởi và cận núm chỉnh nhiệt, nền trắng, đọc được 50 W."
+  },
+  "sui-oxy": {
+    "terms": [
+      "aquarium air pump airstone",
+      "aquarium air pump"
+    ],
+    "approved": [],
+    "reviewNote": "Ảnh đủ bộ có logo và nhãn model rõ trên thân máy.",
+    "photoAdvice": "Chụp đủ máy, dây và đá sủi trên nền trắng. Thêm ảnh hoạt động trong bể."
+  },
+  "ray-nana": {
+    "terms": [
+      "Anubias barteri var nana aquarium",
+      "Anubias nana"
+    ],
+    "approved": [
+      "https://www.inaturalist.org/photos/288942123",
+      "https://www.inaturalist.org/photos/319839961"
+    ],
+    "openverseTerm": "Anubias barteri nana"
+  },
+  "vi-sinh": {
+    "terms": [
+      "aquarium nitrifying bacteria bottle",
+      "aquarium bacterial starter bottle",
+      "aquarium water conditioner bacterial starter"
+    ],
+    "approved": [],
+    "reviewNote": "Chưa tìm được ảnh chai vi sinh xử lý nước hồ cá có giấy phép phù hợp.",
+    "photoAdvice": "Chụp chai chính diện và mặt hướng dẫn, thấy dung tích 100 mL."
+  }
+}

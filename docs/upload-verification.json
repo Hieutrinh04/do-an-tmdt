@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-09T07:56:40.420Z",
+  "result": "PASS",
+  "checks": [
+    "JWT",
+    "magic bytes",
+    "5 MB",
+    "WebP 1200",
+    "thumb 480",
+    "credits API",
+    "volume sau restart backend"
+  ],
+  "file": "/uploads/e1cbb9e5-cb95-4efe-af7c-7569f14809f4.webp"
+}

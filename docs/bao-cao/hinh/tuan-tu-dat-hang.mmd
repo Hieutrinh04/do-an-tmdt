@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant K as Khách
+  participant W as Website
+  participant A as Express
+  participant D as Cơ sở dữ liệu
+  participant O as Outbox
+  participant N as n8n
+  K->>W: Chọn phân loại và số lượng
+  W->>A: POST /api/orders (variantId, quantity, phương thức, DOA)
+  A->>A: Kiểm tra vùng giao, DOA, số lượng tối thiểu
+  A->>D: Transaction: trừ kho có điều kiện, tạo đơn, ghi outbox
+  D-->>A: Mã đơn DHyyyymmdd-nnnn
+  A-->>W: 201 với tổng tiền và mã đơn
+  O->>D: Đọc sự kiện chưa gửi
+  O->>N: Gửi order-created (có thử lại)
+  N->>N: Ghi Sheets, nhắn Messenger nếu có PSID, email người bán
+  N-->>O: Thành công, đánh dấu đã gửi

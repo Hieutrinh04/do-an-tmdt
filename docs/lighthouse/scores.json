@@ -1,0 +1,24 @@
+[
+  {
+    "page": "home",
+    "url": "http://localhost:8080/",
+    "at": "2026-11-09T07:58:33.628Z",
+    "scores": {
+      "performance": 99,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    }
+  },
+  {
+    "page": "product",
+    "url": "http://localhost:8080/product/neon-tetra",
+    "at": "2026-11-09T07:58:49.279Z",
+    "scores": {
+      "performance": 98,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    }
+  }
+]

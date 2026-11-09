@@ -1,0 +1,699 @@
+{
+  "id": "lfxCreated000002",
+  "name": "Long Fish – Đơn hàng mới",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "order-created",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Webhook · Đơn mới",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "notes": "Nhận yêu cầu tại /webhook/order-created.",
+      "notesInFlow": true,
+      "webhookId": "may-order-created-post"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !!$env.N8N_WEBHOOK_SECRET && $json.headers['x-webhook-secret'] === $env.N8N_WEBHOOK_SECRET && /^DH\\d{8}-\\d{4,10}$/.test($json.body.code || '') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "Webhook hợp lệ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        200,
+        0
+      ],
+      "notes": "Rẽ nhánh theo điều kiện.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "={{ \"http://backend:3001/api/internal/orders/\" + $json.body.code }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000003",
+      "name": "Đọc và kiểm tra đơn đã lưu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        0
+      ],
+      "notes": "Kiểm tra dòng hàng, tổng tiền và dữ liệu đơn đã commit. Kho đã được giữ khi chốt đơn.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const order = $input.first().json;\nconst event = $('Webhook · Đơn mới').first().json.body;\nconst status = event.status;\nconst labels = {PENDING:'Chờ xác nhận',CONFIRMED:'Đã xác nhận',SHIPPING:'Đang giao',DELIVERED:'Đã giao',CANCELLED:'Đã hủy'};\nif (!labels[status]) throw new Error('Trạng thái sự kiện không hợp lệ.');\nconst esc = value => String(value ?? '').replace(/[&<>\"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[char]));\nconst money = value => new Intl.NumberFormat('vi-VN', {style:'currency',currency:'VND'}).format(value);\nconst row = {code:order.code,createdAt:order.createdAt,customer:order.customerName,phone:order.phone,address:order.address,\n  products:order.items.map(item => item.productName + ' · ' + item.color + ' / ' + item.size + ' / ' + item.gender + ' × ' + item.quantity + ' ' + item.unit).join('; '),\n  quantity:order.items.reduce((sum,item) => sum+item.quantity,0),subtotal:order.subtotal,shippingFee:order.shippingFee,\n  gender:order.items.map(item => item.gender).join('; '),packingFee:order.packingFee,\n  hasLiveFish:order.hasLiveFish ? 'Có' : 'Không',preferredDelivery:order.preferredDelivery,deliveryNote:order.note,\n  total:order.total,paymentMethod:order.paymentMethod,paymentStatus:order.paymentStatus,status};\nconst site = ($env.SITE_URL || 'http://localhost:8080').replace(/\\/+$/, '');\nconst url = site + '/track?code=' + encodeURIComponent(order.code);\nconst method = order.paymentMethod === 'BANK_QR' ?\n  'Chuyển khoản đúng ' + money(order.total) + ', nội dung ' + order.code + (order.qrUrl ? '\\nQR: ' + order.qrUrl : '') :\n  'Thanh toán khi nhận hàng.';\nconst policy = order.hasLiveFish ? '\\n' + order.doaPolicy : '';\nconst newText = 'Long Fish đã nhận đơn ' + order.code + '.\\n' + row.products + '\\nTổng: ' + money(order.total) + '.\\n' + method;\nconst statusText = 'Long Fish · Đơn ' + order.code + ' · ' + labels[status] + '.';\nconst htmlRows = order.items.map(item => '<tr><td>' + esc(item.productName) + '</td><td>' + esc(item.color) + ' / ' +\n  esc(item.size) + ' / ' + esc(item.gender) + '</td><td>' + item.quantity + ' ' + esc(item.unit) + '</td><td>' + esc(money(item.unitPrice * item.quantity)) + '</td></tr>').join('');\nconst html = '<h2>Long Fish · Đơn mới ' + esc(order.code) + '</h2><p>' + esc(order.customerName) + ' · ' + esc(order.phone) +\n  '<br>' + esc(order.address) + '</p><table border=\"1\" cellpadding=\"8\"><tr><th>Sản phẩm</th><th>Phân loại</th><th>SL</th><th>Tiền hàng</th></tr>' +\n  htmlRows + '</table><p>Tiền hàng ' + money(order.subtotal) + ' · Giao hàng ' + money(order.shippingFee) + ' · Đóng gói ' + money(order.packingFee) +\n  ' · Tổng ' + money(order.total) + '</p><p>' + esc(order.paymentMethod) + '</p><p>Cá sống: ' + row.hasLiveFish + '<br>Nhận mong muốn: ' +\n  esc(order.preferredDelivery ? new Date(order.preferredDelivery).toLocaleString('vi-VN', {timeZone:'Asia/Ho_Chi_Minh'}) : '') +\n  '<br>Ghi chú: ' + esc(order.note) + '</p>';\nreturn [{ json: {row, subject:'[Long Fish] Đơn mới ' + order.code, html, psid:order.psid,\n  message:{text:(true ? newText.slice(0,1300) + policy : statusText + (status === 'SHIPPING' ? policy : '')) + '\\nTra cứu: ' + url.toString()} } }];"
+      },
+      "id": "00000000-0000-4000-8000-000000000004",
+      "name": "Chuẩn bị Sheets và thông báo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "notes": "Dựng hàng Sheets, nội dung Messenger và bảng email HTML. Escape nội dung do khách nhập.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $env.MOCK_INTEGRATIONS !== 'false' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000005",
+      "name": "Chế độ mock?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        0
+      ],
+      "notes": "Rẽ nhánh theo điều kiện.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "http://backend:3001/api/internal/mock/sheets",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({sheet:'Long_Fish_Orders',row:$json.row}) }}"
+      },
+      "id": "00000000-0000-4000-8000-000000000006",
+      "name": "CSV · Upsert đơn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        0
+      ],
+      "notes": "Ghi hoặc cập nhật theo mã đơn trong Long_Fish_Orders.csv.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Long_Fish_Orders"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "code": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"code\"] }}",
+            "createdAt": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"createdAt\"] }}",
+            "customer": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"customer\"] }}",
+            "phone": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"phone\"] }}",
+            "address": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"address\"] }}",
+            "products": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"products\"] }}",
+            "quantity": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"quantity\"] }}",
+            "subtotal": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"subtotal\"] }}",
+            "shippingFee": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"shippingFee\"] }}",
+            "total": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"total\"] }}",
+            "paymentMethod": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"paymentMethod\"] }}",
+            "paymentStatus": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"paymentStatus\"] }}",
+            "status": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"status\"] }}",
+            "gender": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"gender\"] }}",
+            "packingFee": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"packingFee\"] }}",
+            "hasLiveFish": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"hasLiveFish\"] }}",
+            "preferredDelivery": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"preferredDelivery\"] }}",
+            "deliveryNote": "={{ $('Chuẩn bị Sheets và thông báo').first().json.row[\"deliveryNote\"] }}"
+          },
+          "matchingColumns": [
+            "code"
+          ],
+          "schema": [
+            {
+              "id": "code",
+              "displayName": "code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "createdAt",
+              "displayName": "createdAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer",
+              "displayName": "customer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "address",
+              "displayName": "address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "products",
+              "displayName": "products",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "quantity",
+              "displayName": "quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subtotal",
+              "displayName": "subtotal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "shippingFee",
+              "displayName": "shippingFee",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total",
+              "displayName": "total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "paymentMethod",
+              "displayName": "paymentMethod",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "paymentStatus",
+              "displayName": "paymentStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gender",
+              "displayName": "gender",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "packingFee",
+              "displayName": "packingFee",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hasLiveFish",
+              "displayName": "hasLiveFish",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "preferredDelivery",
+              "displayName": "preferredDelivery",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deliveryNote",
+              "displayName": "deliveryNote",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000007",
+      "name": "Sheets · Upsert đơn",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1200,
+        0
+      ],
+      "notes": "Upsert theo code để chạy lại không tạo bản ghi trùng.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !!$('Chuẩn bị Sheets và thông báo').first().json.psid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000008",
+      "name": "Có PSID?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1400,
+        0
+      ],
+      "notes": "Rẽ nhánh theo điều kiện.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "http://backend:3001/api/internal/messenger/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({psid:$('Chuẩn bị Sheets và thông báo').first().json.psid,message:$('Chuẩn bị Sheets và thông báo').first().json.message}) }}"
+      },
+      "id": "00000000-0000-4000-8000-000000000009",
+      "name": "Gửi Messenger",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        200
+      ],
+      "notes": "Gửi qua Meta Send API hoặc in tin nhắn trong chế độ mock.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000010",
+      "name": "Hoàn tất",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        200,
+        200
+      ],
+      "notes": "Trả mã HTTP và nội dung cho bên gọi.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Webhook không hợp lệ.",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000011",
+      "name": "Từ chối webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        400,
+        200
+      ],
+      "notes": "Trả mã HTTP và nội dung cho bên gọi.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "http://backend:3001/api/internal/mock/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({subject:$('Chuẩn bị Sheets và thông báo').first().json.subject,html:$('Chuẩn bị Sheets và thông báo').first().json.html}) }}"
+      },
+      "id": "00000000-0000-4000-8000-000000000012",
+      "name": "Email · Log đơn mới",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        200
+      ],
+      "notes": "In email người bán trong chế độ mock.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.MAIL_FROM }}",
+        "toEmail": "={{ $env.MAIL_TO }}",
+        "subject": "={{ $('Chuẩn bị Sheets và thông báo').first().json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $('Chuẩn bị Sheets và thông báo').first().json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000013",
+      "name": "SMTP · Đơn hàng mới",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        200
+      ],
+      "notes": "Dùng credential SMTP và gửi nội dung HTML đã escape.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Webhook · Đơn mới": {
+      "main": [
+        [
+          {
+            "node": "Webhook hợp lệ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook hợp lệ?": {
+      "main": [
+        [
+          {
+            "node": "Đọc và kiểm tra đơn đã lưu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Từ chối webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc và kiểm tra đơn đã lưu": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn bị Sheets và thông báo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn bị Sheets và thông báo": {
+      "main": [
+        [
+          {
+            "node": "Chế độ mock?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chế độ mock?": {
+      "main": [
+        [
+          {
+            "node": "CSV · Upsert đơn",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sheets · Upsert đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV · Upsert đơn": {
+      "main": [
+        [
+          {
+            "node": "Email · Log đơn mới",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email · Log đơn mới": {
+      "main": [
+        [
+          {
+            "node": "Có PSID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets · Upsert đơn": {
+      "main": [
+        [
+          {
+            "node": "SMTP · Đơn hàng mới",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMTP · Đơn hàng mới": {
+      "main": [
+        [
+          {
+            "node": "Có PSID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Có PSID?": {
+      "main": [
+        [
+          {
+            "node": "Gửi Messenger",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hoàn tất",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gửi Messenger": {
+      "main": [
+        [
+          {
+            "node": "Hoàn tất",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "errorWorkflow": "lfxError00000005"
+  },
+  "pinData": {},
+  "tags": []
+}

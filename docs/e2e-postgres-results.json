@@ -1,0 +1,46 @@
+{
+  "at": "2026-11-09T07:44:06.905Z",
+  "mode": "Docker + n8n mock HTTP",
+  "rows": [
+    {
+      "scenario": "MinQty, vượt tồn và vùng không giao cá sống",
+      "result": "PASS",
+      "note": "Đã chạy qua HTTP."
+    },
+    {
+      "scenario": "COD, tiền nguyên VND và tồn kho giảm đúng",
+      "result": "PASS",
+      "note": "DH20261109-0002"
+    },
+    {
+      "scenario": "VietQR đúng số tiền và nội dung, hủy hoàn kho",
+      "result": "PASS",
+      "note": "Đã chạy qua HTTP."
+    },
+    {
+      "scenario": "Chuỗi trạng thái, timeline, số điện thoại tra cứu sai",
+      "result": "PASS",
+      "note": "Đã chạy qua HTTP."
+    },
+    {
+      "scenario": "Tám khách tranh món cuối, chỉ một đơn thành công",
+      "result": "PASS",
+      "note": "Đã chạy qua HTTP."
+    },
+    {
+      "scenario": "Dashboard khớp dữ liệu đơn hiện tại",
+      "result": "PASS",
+      "note": "Đã chạy qua HTTP."
+    },
+    {
+      "scenario": "n8n tắt, đơn vẫn tạo và outbox gửi lại khi bật",
+      "result": "PASS",
+      "note": "Đơn DH20261109-0005 vào CSV, có log email và Messenger sau khi n8n bật lại."
+    },
+    {
+      "scenario": "Chat qua webhook n8n, phân loại và handoff hai lần",
+      "result": "PASS",
+      "note": "Đã chạy qua HTTP."
+    }
+  ]
+}

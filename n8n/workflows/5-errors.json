@@ -1,0 +1,171 @@
+{
+  "id": "lfxError00000005",
+  "name": "Long Fish – Nhật ký và cảnh báo",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Lỗi workflow",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "notes": "Nhận lỗi từ các workflow Messenger, đơn hàng và báo cáo.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const item=$input.first().json;\nconst execution=String(item.execution?.id || '').replace(/[^a-zA-Z0-9-]/g,'');\nconst workflow=String(item.workflow?.id || '').replace(/[^a-zA-Z0-9-]/g,'');\nreturn [{json:{subject:'[Long Fish] Lỗi tự động hóa n8n',html:'<p>Workflow '+workflow+' · Lần chạy '+execution+\n  '</p><p>Mở mục Executions trong n8n để kiểm tra chi tiết.</p>'}}];"
+      },
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "Tạo thông báo lỗi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "notes": "Báo lỗi theo mã lần chạy, tránh đưa dữ liệu khách hoặc credential vào email.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $env.MOCK_INTEGRATIONS !== 'false' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000003",
+      "name": "Lỗi · Chế độ mock?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        0
+      ],
+      "notes": "Rẽ nhánh theo điều kiện.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "http://backend:3001/api/internal/mock/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "00000000-0000-4000-8000-000000000004",
+      "name": "Log lỗi",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "notes": "In lỗi trong backend, giữ lần chạy thất bại trong n8n.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.MAIL_FROM }}",
+        "toEmail": "={{ $env.MAIL_TO }}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000005",
+      "name": "SMTP · Báo lỗi",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        0
+      ],
+      "notes": "Dùng credential SMTP và gửi nội dung HTML đã escape.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Lỗi workflow": {
+      "main": [
+        [
+          {
+            "node": "Tạo thông báo lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo thông báo lỗi": {
+      "main": [
+        [
+          {
+            "node": "Lỗi · Chế độ mock?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lỗi · Chế độ mock?": {
+      "main": [
+        [
+          {
+            "node": "Log lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SMTP · Báo lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh"
+  },
+  "pinData": {},
+  "tags": []
+}

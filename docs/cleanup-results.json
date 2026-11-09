@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-09T08:09:50.339Z",
+  "projects": [
+    "long-fish-e2e",
+    "long-fish-e2e-pg",
+    "long-fish-restore-20261109144601"
+  ],
+  "backedUpVolumes": 12,
+  "primaryCountsBefore": [
+    48,
+    32
+  ],
+  "primaryCountsAfter": [
+    48,
+    32
+  ],
+  "primaryHealth": [
+    "long-fish-frontend-1|Up 12 minutes",
+    "long-fish-backend-1|Up 13 minutes (healthy)",
+    "long-fish-n8n-1|Up 5 hours (healthy)"
+  ],
+  "backup": "D:\\Đồ án TMĐT\\data\\cleanup-2026-11-09T08-09-15-099Z"
+}

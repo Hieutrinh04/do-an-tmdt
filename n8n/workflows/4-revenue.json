@@ -1,0 +1,775 @@
+{
+  "id": "lfxReports000004",
+  "name": "Long Fish – Tổng hợp doanh thu",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "00000000-0000-4000-8000-000000000019",
+      "name": "Chạy thử cả hai báo cáo",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -200
+      ],
+      "notes": "Điểm vào nội bộ để chạy thử báo cáo ngày và tháng bằng n8n execute. Hai lịch định kỳ chạy độc lập.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "55 23 * * *"
+            }
+          ]
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "23:55 mỗi ngày",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "notes": "Chạy theo giờ Việt Nam.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "10 0 1 * *"
+            }
+          ]
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "00:10 ngày đầu tháng",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        0
+      ],
+      "notes": "Tổng hợp tháng vừa kết thúc.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const vn = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);\nconst day = false ? new Date(Date.parse(vn.slice(0,7)+'-01')-86400000).toISOString().slice(0,10) : vn;\nreturn [{json:{period:day.slice(0,10),year:day.slice(0,4)}}];"
+      },
+      "id": "00000000-0000-4000-8000-000000000003",
+      "name": "Kỳ báo cáo · Ngày",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "notes": "Tính kỳ theo UTC+7, tháng lấy tháng trước.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "={{ \"http://backend:3001/api/internal/stats/daily?from=\" + $json.period + \"&to=\" + $json.period }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000004",
+      "name": "Đọc doanh thu · Ngày",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "notes": "Đọc báo cáo từ SQLite qua API thống kê.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const period = $('Kỳ báo cáo · Ngày').first().json.period;\nconst row = $input.first().json.rows.find(item => item.period === period);\nif (!row) throw new Error('Thiếu dữ liệu của kỳ ' + period);\nconst subject = '[Long Fish] Báo cáo doanh thu ngày ' + period;\nconst money = new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND'}).format(row.revenue);\nreturn [{json:{row,subject,html:'<h2>'+subject+'</h2><p>Doanh thu đơn đã giao: '+money+\n  '</p><p>Tổng số đơn: '+row.orders+' · Đã hủy: '+row.cancelled+'</p>'}}];"
+      },
+      "id": "00000000-0000-4000-8000-000000000005",
+      "name": "Soạn báo cáo · Ngày",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ],
+      "notes": "Lấy đúng kỳ và soạn email tổng hợp.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $env.MOCK_INTEGRATIONS !== 'false' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000006",
+      "name": "Mock · Ngày",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1000,
+        0
+      ],
+      "notes": "Rẽ nhánh theo điều kiện.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "http://backend:3001/api/internal/mock/sheets",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({sheet:'Daily_Revenue',row:$json.row}) }}"
+      },
+      "id": "00000000-0000-4000-8000-000000000007",
+      "name": "CSV · Ngày",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "notes": "Upsert báo cáo theo kỳ trong CSV.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Daily_Revenue"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "period": "={{ $('Soạn báo cáo · Ngày').first().json.row[\"period\"] }}",
+            "orders": "={{ $('Soạn báo cáo · Ngày').first().json.row[\"orders\"] }}",
+            "revenue": "={{ $('Soạn báo cáo · Ngày').first().json.row[\"revenue\"] }}",
+            "cancelled": "={{ $('Soạn báo cáo · Ngày').first().json.row[\"cancelled\"] }}"
+          },
+          "matchingColumns": [
+            "period"
+          ],
+          "schema": [
+            {
+              "id": "period",
+              "displayName": "period",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "orders",
+              "displayName": "orders",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "revenue",
+              "displayName": "revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cancelled",
+              "displayName": "cancelled",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000008",
+      "name": "Sheets · Ngày",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1400,
+        0
+      ],
+      "notes": "Upsert theo period để chạy lại không tạo bản ghi trùng.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "http://backend:3001/api/internal/mock/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({subject:$('Soạn báo cáo · Ngày').first().json.subject,html:$('Soạn báo cáo · Ngày').first().json.html}) }}"
+      },
+      "id": "00000000-0000-4000-8000-000000000009",
+      "name": "Email mock · Ngày",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        200
+      ],
+      "notes": "In email báo cáo trong chế độ mock.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.MAIL_FROM }}",
+        "toEmail": "={{ $env.MAIL_TO }}",
+        "subject": "={{ $('Soạn báo cáo · Ngày').first().json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $('Soạn báo cáo · Ngày').first().json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000010",
+      "name": "SMTP · Ngày",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        200,
+        200
+      ],
+      "notes": "Dùng credential SMTP và gửi nội dung HTML đã escape.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const vn = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);\nconst day = true ? new Date(Date.parse(vn.slice(0,7)+'-01')-86400000).toISOString().slice(0,10) : vn;\nreturn [{json:{period:day.slice(0,7),year:day.slice(0,4)}}];"
+      },
+      "id": "00000000-0000-4000-8000-000000000011",
+      "name": "Kỳ báo cáo · Tháng",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        200
+      ],
+      "notes": "Tính kỳ theo UTC+7, tháng lấy tháng trước.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "={{ \"http://backend:3001/api/internal/stats/monthly?year=\" + $json.year }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000012",
+      "name": "Đọc doanh thu · Tháng",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        200
+      ],
+      "notes": "Đọc báo cáo từ SQLite qua API thống kê.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const period = $('Kỳ báo cáo · Tháng').first().json.period;\nconst row = $input.first().json.rows.find(item => item.period === period);\nif (!row) throw new Error('Thiếu dữ liệu của kỳ ' + period);\nconst subject = '[Long Fish] Báo cáo doanh thu tháng ' + period;\nconst money = new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND'}).format(row.revenue);\nreturn [{json:{row,subject,html:'<h2>'+subject+'</h2><p>Doanh thu đơn đã giao: '+money+\n  '</p><p>Tổng số đơn: '+row.orders+' · Đã hủy: '+row.cancelled+'</p>'}}];"
+      },
+      "id": "00000000-0000-4000-8000-000000000013",
+      "name": "Soạn báo cáo · Tháng",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        200
+      ],
+      "notes": "Lấy đúng kỳ và soạn email tổng hợp.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $env.MOCK_INTEGRATIONS !== 'false' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000014",
+      "name": "Mock · Tháng",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1000,
+        200
+      ],
+      "notes": "Rẽ nhánh theo điều kiện.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "http://backend:3001/api/internal/mock/sheets",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({sheet:'Monthly_Revenue',row:$json.row}) }}"
+      },
+      "id": "00000000-0000-4000-8000-000000000015",
+      "name": "CSV · Tháng",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        200
+      ],
+      "notes": "Upsert báo cáo theo kỳ trong CSV.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Monthly_Revenue"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "period": "={{ $('Soạn báo cáo · Tháng').first().json.row[\"period\"] }}",
+            "orders": "={{ $('Soạn báo cáo · Tháng').first().json.row[\"orders\"] }}",
+            "revenue": "={{ $('Soạn báo cáo · Tháng').first().json.row[\"revenue\"] }}",
+            "cancelled": "={{ $('Soạn báo cáo · Tháng').first().json.row[\"cancelled\"] }}"
+          },
+          "matchingColumns": [
+            "period"
+          ],
+          "schema": [
+            {
+              "id": "period",
+              "displayName": "period",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "orders",
+              "displayName": "orders",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "revenue",
+              "displayName": "revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cancelled",
+              "displayName": "cancelled",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000016",
+      "name": "Sheets · Tháng",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1400,
+        200
+      ],
+      "notes": "Upsert theo period để chạy lại không tạo bản ghi trùng.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "url": "http://backend:3001/api/internal/mock/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 18000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({subject:$('Soạn báo cáo · Tháng').first().json.subject,html:$('Soạn báo cáo · Tháng').first().json.html}) }}"
+      },
+      "id": "00000000-0000-4000-8000-000000000017",
+      "name": "Email mock · Tháng",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        400
+      ],
+      "notes": "In email báo cáo trong chế độ mock.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.MAIL_FROM }}",
+        "toEmail": "={{ $env.MAIL_TO }}",
+        "subject": "={{ $('Soạn báo cáo · Tháng').first().json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $('Soạn báo cáo · Tháng').first().json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000018",
+      "name": "SMTP · Tháng",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        200,
+        400
+      ],
+      "notes": "Dùng credential SMTP và gửi nội dung HTML đã escape.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "23:55 mỗi ngày": {
+      "main": [
+        [
+          {
+            "node": "Kỳ báo cáo · Ngày",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kỳ báo cáo · Ngày": {
+      "main": [
+        [
+          {
+            "node": "Đọc doanh thu · Ngày",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc doanh thu · Ngày": {
+      "main": [
+        [
+          {
+            "node": "Soạn báo cáo · Ngày",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soạn báo cáo · Ngày": {
+      "main": [
+        [
+          {
+            "node": "Mock · Ngày",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock · Ngày": {
+      "main": [
+        [
+          {
+            "node": "CSV · Ngày",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sheets · Ngày",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV · Ngày": {
+      "main": [
+        [
+          {
+            "node": "Email mock · Ngày",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets · Ngày": {
+      "main": [
+        [
+          {
+            "node": "SMTP · Ngày",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "00:10 ngày đầu tháng": {
+      "main": [
+        [
+          {
+            "node": "Kỳ báo cáo · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kỳ báo cáo · Tháng": {
+      "main": [
+        [
+          {
+            "node": "Đọc doanh thu · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc doanh thu · Tháng": {
+      "main": [
+        [
+          {
+            "node": "Soạn báo cáo · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soạn báo cáo · Tháng": {
+      "main": [
+        [
+          {
+            "node": "Mock · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock · Tháng": {
+      "main": [
+        [
+          {
+            "node": "CSV · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sheets · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV · Tháng": {
+      "main": [
+        [
+          {
+            "node": "Email mock · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheets · Tháng": {
+      "main": [
+        [
+          {
+            "node": "SMTP · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chạy thử cả hai báo cáo": {
+      "main": [
+        [
+          {
+            "node": "Kỳ báo cáo · Ngày",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kỳ báo cáo · Tháng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "errorWorkflow": "lfxError00000005"
+  },
+  "pinData": {},
+  "tags": []
+}

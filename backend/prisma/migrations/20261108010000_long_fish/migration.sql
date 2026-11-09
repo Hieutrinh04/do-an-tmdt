@@ -1,0 +1,17 @@
+ALTER TABLE "Product" ADD COLUMN "isLiveFish" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Product" ADD COLUMN "careInfo" JSONB;
+ALTER TABLE "ProductVariant" ADD COLUMN "gender" TEXT NOT NULL DEFAULT 'Không phân biệt';
+ALTER TABLE "ProductVariant" ADD COLUMN "unit" TEXT NOT NULL DEFAULT 'cái';
+ALTER TABLE "ProductVariant" ADD COLUMN "minQty" INTEGER NOT NULL DEFAULT 1;
+DROP INDEX "ProductVariant_productId_color_size_key";
+CREATE UNIQUE INDEX "ProductVariant_productId_color_size_gender_key" ON "ProductVariant"("productId", "color", "size", "gender");
+ALTER TABLE "Order" ADD COLUMN "packingFee" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Order" ADD COLUMN "hasLiveFish" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Order" ADD COLUMN "doaAccepted" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Order" ADD COLUMN "preferredDelivery" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Order" ADD COLUMN "internalNote" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "OrderItem" ADD COLUMN "gender" TEXT NOT NULL DEFAULT 'Không phân biệt';
+ALTER TABLE "OrderItem" ADD COLUMN "unit" TEXT NOT NULL DEFAULT 'cái';
+ALTER TABLE "OrderItem" ADD COLUMN "category" TEXT NOT NULL DEFAULT 'Khác';
+ALTER TABLE "OrderItem" ADD COLUMN "isLiveFish" BOOLEAN NOT NULL DEFAULT false;
+UPDATE "OrderItem" SET "category" = COALESCE((SELECT p."category" FROM "Product" p JOIN "ProductVariant" v ON v."productId" = p."id" WHERE v."id" = "OrderItem"."variantId"), 'Khác');

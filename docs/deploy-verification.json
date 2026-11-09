@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-09T08:14:49.988Z",
+  "composeConfig": "PASS",
+  "onlyCaddyPublishes80And443": true,
+  "frontendBackendN8nGatewayNoPublicPorts": true,
+  "gatewayNginxSyntax": "PASS",
+  "publicTlsAndMetaSmoke": "UNVERIFIED - owner URL/credentials required",
+  "caddyValidate": "PASS (network disabled, no certificate request)"
+}

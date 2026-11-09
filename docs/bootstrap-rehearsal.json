@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-09T07:54:07.948Z",
+  "project": "long-fish-e2e",
+  "backup": "data/bootstrap-backup",
+  "downVolumes": true,
+  "builtFromCleanVolumes": true,
+  "imported": true,
+  "activatedIds": [
+    "lfxMessenger0001",
+    "lfxCreated000002",
+    "lfxStatus0000003",
+    "lfxReports000004",
+    "lfxError00000005"
+  ],
+  "httpSmoke": {
+    "passed": 8,
+    "failed": 0,
+    "at": "2026-11-09T07:55:51.646Z"
+  }
+}

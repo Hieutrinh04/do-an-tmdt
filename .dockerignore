@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+**/dist
+.env
+.env.*
+**/*.db*
+backend/prisma/.postgres
+data
+.git

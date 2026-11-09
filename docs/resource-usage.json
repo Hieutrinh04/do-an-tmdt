@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-09T08:19:40.116Z",
+  "before": {
+    "project": "long-fish",
+    "backendMiB": 50.58,
+    "frontendMiB": 8.734,
+    "n8nMiB": 233.1
+  },
+  "after": {
+    "project": "long-fish-e2e-b5",
+    "stats": [
+      {
+        "name": "long-fish-e2e-b5-n8n-1",
+        "memory": "284.7MiB / 768MiB",
+        "cpu": "0.52%"
+      },
+      {
+        "name": "long-fish-e2e-b5-frontend-1",
+        "memory": "8.695MiB / 128MiB",
+        "cpu": "0.00%"
+      },
+      {
+        "name": "long-fish-e2e-b5-backend-1",
+        "memory": "136.3MiB / 512MiB",
+        "cpu": "0.20%"
+      }
+    ],
+    "limitsBytes": {
+      "backend": 536870912,
+      "frontend": 134217728,
+      "n8n": 805306368
+    }
+  },
+  "note": "Separate instances measured, not a controlled same-process reduction. 2 GB previously belonged to Docker Scout indexing. Main stack configuration not reapplied."
+}

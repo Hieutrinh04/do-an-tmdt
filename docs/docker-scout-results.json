@@ -1,0 +1,12 @@
+{
+  "at": "2026-11-09",
+  "tool": "Docker Scout 1.23.1",
+  "severityFilter": ["critical", "high"],
+  "images": [
+    {"image":"long-fish-backend:latest","digestPrefix":"729d76dc80f3","critical":10,"high":82,"packages":470,"status":"SCANNED"},
+    {"image":"long-fish-e2e-frontend:latest","digestPrefix":"37afda96d336","critical":1,"high":2,"packages":89,"status":"SCANNED"},
+    {"image":"long-fish-e2e-n8n:latest","status":"UNVERIFIED","reason":"Stopped after 8 minutes indexing and about 2 GB RAM; no CVE result"}
+  ],
+  "rawLogs": "data/scout-*-final.txt",
+  "productionNpmAudit": "0 vulnerabilities; excludes base OS, embedded Go and global npm"
+}

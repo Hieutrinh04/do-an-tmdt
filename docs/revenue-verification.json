@@ -1,0 +1,21 @@
+{
+  "timezone": "Asia/Ho_Chi_Minh",
+  "results": [
+    {
+      "table": "Daily_Revenue",
+      "period": "2026-11-09",
+      "orders": 5,
+      "revenue": 357000,
+      "cancelled": 0
+    },
+    {
+      "table": "Monthly_Revenue",
+      "period": "2026-10",
+      "orders": 7,
+      "revenue": 2080000,
+      "cancelled": 1
+    }
+  ],
+  "verifiedAt": "2026-11-09T05:37:13Z",
+  "method": "Manual execution of daily and monthly branches; cron/timezone reviewed, wall-clock trigger not observed"
+}

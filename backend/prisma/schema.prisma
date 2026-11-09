@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentMethod {
+  COD
+  BANK_QR
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPING
+  DELIVERED
+  CANCELLED
+}
+
+enum HandoffStatus {
+  OPEN
+  DONE
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  description String
+  price       Int
+  images      Json
+  category    String
+  isLiveFish  Boolean          @default(false)
+  careInfo    Json?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  variants    ProductVariant[]
+
+  @@index([isActive, category])
+}
+
+model ProductVariant {
+  id            String      @id @default(cuid())
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  color         String
+  size          String
+  gender        String      @default("Không phân biệt")
+  unit          String      @default("cái")
+  minQty        Int         @default(1)
+  sku           String      @unique
+  stock         Int
+  lowStockThreshold Int     @default(5)
+  priceOverride Int?
+  isActive      Boolean     @default(true)
+  orderItems    OrderItem[]
+
+  @@unique([productId, color, size, gender])
+}
+
+model Order {
+  id            String           @id @default(cuid())
+  code          String           @unique
+  customerName  String
+  phone         String
+  address       String
+  psid          String?
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus    @default(UNPAID)
+  subtotal      Int
+  shippingFee   Int
+  packingFee    Int              @default(0)
+  hasLiveFish   Boolean          @default(false)
+  doaAccepted   Boolean          @default(false)
+  preferredDelivery String       @default("")
+  internalNote  String           @default("")
+  total         Int
+  status        OrderStatus      @default(PENDING)
+  note          String           @default("")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  items         OrderItem[]
+  history       OrderStatusLog[]
+
+  @@index([createdAt, status])
+  @@index([phone])
+}
+
+model OrderItem {
+  id          String         @id @default(cuid())
+  orderId     String
+  order       Order          @relation(fields: [orderId], references: [id])
+  variantId   String
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
+  productName String
+  color       String
+  size        String
+  gender      String         @default("Không phân biệt")
+  unit        String         @default("cái")
+  category    String         @default("Khác")
+  isLiveFish  Boolean        @default(false)
+  unitPrice   Int
+  quantity    Int
+}
+
+model OrderStatusLog {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id])
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  changedAt  DateTime    @default(now())
+  action     String      @default("status")
+  detail     String      @default("")
+
+  @@index([orderId, changedAt])
+}
+
+model HandoffRequest {
+  id          String        @id @default(cuid())
+  psid        String
+  lastMessage String
+  reason      String
+  status      HandoffStatus @default(OPEN)
+  createdAt   DateTime      @default(now())
+
+  @@index([psid, status])
+}
+
+model AdminUser {
+  id           String @id @default(cuid())
+  username     String @unique
+  passwordHash String
+}
+
+model OrderSequence {
+  day   String @id
+  value Int
+}
+
+model OutboxEvent {
+  id          Int      @id @default(autoincrement())
+  kind        String
+  payload     Json
+  attempts    Int      @default(0)
+  availableAt DateTime @default(now())
+  sentAt      DateTime?
+
+  @@index([sentAt, id])
+}
+
+model ConversationState {
+  psid          String   @id
+  lastInboundAt DateTime?
+  unknownCount  Int      @default(0)
+  handoff       Boolean  @default(false)
+  selection     Json?
+  updatedAt     DateTime @updatedAt
+}
+
+model MessengerReceipt {
+  mid       String   @id
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
