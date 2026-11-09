@@ -51,6 +51,17 @@ export async function detail(slug: string) {
   return product;
 }
 
+export async function detailPage(slug: string) {
+  const product = await detail(slug);
+  const sellable = (row: { variants: { stock: number; minQty: number }[] }) => row.variants.some(variant => variant.stock >= variant.minQty);
+  // Khi không còn phân loại nào đủ hàng, gợi ý tối đa 4 sản phẩm cùng nhóm còn hàng.
+  const alternatives = sellable(product) ? [] : (await db.product.findMany({
+    where: { isActive: true, category: product.category, id: { not: product.id } },
+    include: { variants: publicVariants }, orderBy: { createdAt: 'asc' },
+  })).filter(sellable).slice(0, 4).map(row => ({ id: row.id, name: row.name, slug: row.slug, price: row.price, images: row.images }));
+  return { ...product, alternatives };
+}
+
 export async function stock(id: string, color?: string, size?: string, gender?: string) {
   const variants = await db.productVariant.findMany({ where: { productId: id, isActive: true, product: { isActive: true } } });
   const matches = variants.filter(row =>

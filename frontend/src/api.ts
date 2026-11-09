@@ -1,7 +1,7 @@
 export type CareInfo = { scientificName: string; adultCm: number; temperature: string; ph: string; temperament: string; difficulty: string; food: string; minTankLiters: number; community: boolean; algaeEater: boolean; compact: boolean; source?: string };
 export type LivePolicy = { doaPolicy: string; liveProvinces: string[] };
 export type Variant = { id: string; color: string; size: string; sku: string; gender: string; unit: string; minQty: number; stock: number; lowStockThreshold: number; priceOverride: number | null; isActive: boolean };
-export type Product = { id: string; name: string; slug: string; description: string; price: number; images: string[]; category: string; isLiveFish: boolean; careInfo: CareInfo | null; isActive: boolean; variants: Variant[] };
+export type Product = { id: string; name: string; slug: string; description: string; price: number; images: string[]; category: string; isLiveFish: boolean; careInfo: CareInfo | null; isActive: boolean; variants: Variant[]; alternatives?: { id: string; name: string; slug: string; price: number; images: string[] }[] };
 export type Status = 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
 export type Payment = 'COD' | 'BANK_QR';
 export type Item = { id: string; productName: string; color: string; size: string; gender: string; unit: string; quantity: number; unitPrice: number };

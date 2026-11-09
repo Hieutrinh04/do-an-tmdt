@@ -109,6 +109,19 @@ test('sản phẩm hết hàng hiển thị trạng thái và không cho đặt'
   expect(denied.status()).toBe(409);
 });
 
+test('hết hàng hiển thị mẫu cùng nhóm còn hàng', async ({ page, request }) => {
+  const token = await adminToken(request);
+  const soldOut = await createProduct(request, token, 'hetnhom', 0, false);
+  const available = await createProduct(request, token, 'conhang', 5, false);
+  await page.goto('/product/' + soldOut.slug);
+  const panel = page.getByLabel('Mẫu cùng nhóm còn hàng');
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole('link', { name: new RegExp('TEST conhang ' + run) })).toHaveAttribute('href', '/product/' + available.slug);
+  await panel.getByRole('link', { name: new RegExp('TEST conhang ' + run) }).click();
+  await expect(page).toHaveURL(new RegExp(available.slug));
+  await expect(page.getByRole('heading', { name: 'TEST conhang ' + run })).toBeVisible();
+});
+
 test('phụ kiện được giao ngoài vùng cá sống, cá sống thì bị chặn', async ({ request }) => {
   const token = await adminToken(request);
   const accessory = await createProduct(request, token, 'phukien', 5, false);

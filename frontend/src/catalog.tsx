@@ -115,6 +115,8 @@ export function ProductPage() {
         {variant && <div className="buy"><label><span className="sr-only">Số lượng</span><input type="number" min={variant.minQty} max={Math.min(variant.stock, 99)} disabled={variant.stock < variant.minQty} value={quantity}
           onChange={e => setQuantity(Math.max(variant.minQty, Math.min(Math.trunc(Number(e.target.value)), variant.stock, 99)))} /></label>
           <button className="button" disabled={variant.stock < variant.minQty} onClick={buy}>Mua ngay →</button></div>}
+        {(!variant || variant.stock < variant.minQty) && !!product.alternatives?.length && <aside className="panel stack alternatives" aria-label="Mẫu cùng nhóm còn hàng"><h2>Mẫu cùng nhóm còn hàng</h2>
+          <div className="alt-grid">{product.alternatives.map(item => <Link key={item.id} className="product-card" to={'/product/' + item.slug}><strong>{item.name}</strong><span>{money(item.price)}</span></Link>)}</div></aside>}
         {product.isLiveFish && policy && <aside className="policy"><strong>Cam kết cá sống khi nhận</strong><p>{policy.doaPolicy}</p></aside>}
         {product.isLiveFish && product.careInfo && <div className="panel stack"><h2>Thông số nuôi tham khảo</h2><dl className="care-grid">
           {Object.entries({ 'Tên khoa học': product.careInfo.scientificName, 'Cỡ trưởng thành': product.careInfo.adultCm + ' cm',

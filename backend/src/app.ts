@@ -14,7 +14,7 @@ import { db } from './db';
 import { dayKey, dayStart, addDays, env } from './env';
 import { clean, date, doaPolicy, liveProvinces, orderLines, HttpError, orderDetails, orderInput, phone, provinces, psid, qrUrl, required, statusLabels } from './domain';
 import { changeStatus, checkoutQuote, createOrder, reconcileBankPayment, trackOrder, updatePayment } from './orders';
-import { detail, products, productInput, productPatch, removeVariant, stock, updateVariant, variantInput, variantPatch } from './catalog';
+import { detail, detailPage, products, productInput, productPatch, removeVariant, stock, updateVariant, variantInput, variantPatch } from './catalog';
 import { overview, report } from './stats';
 import { uploadAdmin, uploadPublic, uploadedPhotoCredits } from './uploads';
 
@@ -67,7 +67,7 @@ export function createApp() {
     const query = z.object({ color: clean(70).optional(), size: clean(30).optional(), gender: clean(30).optional() }).parse(req.query);
     res.json(await stock(id.parse(req.params.id), query.color, query.size, query.gender));
   });
-  api.get('/products/:slug', async (req, res) => { res.json(await detail(id.parse(req.params.slug))); });
+  api.get('/products/:slug', async (req, res) => { res.json(await detailPage(id.parse(req.params.slug))); });
   api.get('/photo-credits', publicLimit, async (_req, res) => res.set('Cache-Control', 'no-store').json(await uploadedPhotoCredits()));
   api.get('/shipping/provinces', (_req, res) => res.json(provinces));
   api.get('/shipping/policy', (_req, res) => res.json({ doaPolicy, liveProvinces }));

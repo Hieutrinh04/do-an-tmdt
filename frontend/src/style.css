@@ -144,3 +144,6 @@ main{min-height:calc(100vh - 110px)}
   .packing-label small { display: block; font-size: 8pt; }
   .packing-label .live-warning { display: block; border: 1px solid black; padding: 2mm; font-size: 10pt; }
 }
+
+.alt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem}
+.alt-grid .product-card{display:grid;gap:.4rem;padding:.75rem;border:1px solid #cde3e5;border-radius:.6rem;text-decoration:none;color:inherit}

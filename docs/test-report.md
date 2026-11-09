@@ -89,3 +89,9 @@ RAM ghi nhận trước: backend 50,58 MiB, frontend 8,734 MiB, n8n 233,1 MiB tr
 - Không dùng: ảnh "Koi-smic" (thực ra là ảnh thiên văn), ảnh máy sưởi trong ấm nước, ảnh hồ tự nhiên cho Artemia, các ảnh bể/cây/tôm không đúng sản phẩm.
 - Còn 7 sản phẩm chỉ có SVG (Betta Plakat Koi, Koi mini, Hạt nổi Betta, Artemia sấy, Bể kính 40 cm, Sưởi có chỉnh nhiệt, Vi sinh): Wikimedia Commons không có ảnh CC phù hợp đã tìm được. Cần chụp hoặc mua ảnh có quyền sử dụng.
 - Kiểm thử sau thay đổi: lint PASS; backend 122/122; Playwright 19 passed, 1 skipped trên stack làm mới.
+
+## Bổ sung chức năng còn thiếu (09/11/2026, buổi tối)
+
+- **Trang sản phẩm hết hàng gợi ý mẫu cùng nhóm còn hàng:** `GET /api/products/:slug` trả thêm `alternatives` (tối đa 4 sản phẩm cùng danh mục còn hàng) khi không còn phân loại nào đủ tồn kho và tối thiểu. Trang sản phẩm hiển thị khối "Mẫu cùng nhóm còn hàng" có liên kết. Có kịch bản Playwright mới cho luồng này.
+- Kiểm tra lại: lint PASS; Playwright trên stack làm mới 21 passed, 1 skipped (mục skip là khóa đăng nhập, chỉ chạy desktop).
+- Đã rà soát: thông báo đơn mới, âm báo, ghi chú nội bộ, lịch sử, lọc theo ngày giao, cảnh báo tồn thấp và gợi ý thay thế trong bot đã có trước đó.
