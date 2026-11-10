@@ -56,6 +56,18 @@ export async function handleComment(input: z.infer<typeof commentInput>) {
       : 'Bạn đang tìm cá hay phụ kiện nào? Xem sản phẩm tại: ' + site,
     'Bạn nhắn lại tin này, Long Fish sẽ tư vấn cá hợp với bể của bạn và gửi link chốt đơn nhé.',
   ];
-  const result = await sendPrivateReply(input.commentId, lines.join('\n'));
-  return { replied: true, product: matched?.slug, ...result };
+  try {
+    const result = await sendPrivateReply(input.commentId, lines.join('\n'));
+    return { replied: true, product: matched?.slug, ...result };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    // Lỗi tạm thời (mạng, Meta 5xx): bỏ dấu "đã xử lý" để lần quét sau thử lại.
+    // Lỗi Meta từ chối (4xx: đã trả lời rồi, quá 7 ngày, người dùng chặn Page…): giữ nguyên để không gửi lặp.
+    if (!/HTTP 4\d\d/.test(message)) {
+      await db.messengerReceipt.delete({ where: { mid: prefix + input.commentId } }).catch(() => undefined);
+      throw error;
+    }
+    console.warn('[Comment] Meta từ chối tin riêng cho', input.commentId.slice(-8), message);
+    return { replied: false, reason: 'meta_rejected', detail: message.slice(0, 160) };
+  }
 }

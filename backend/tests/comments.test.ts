@@ -99,3 +99,15 @@ test('tên có ký tự lạ không chèn được vào nội dung tin nhắn', 
   expect(text).not.toContain('<');
   expect(text).not.toContain('evil');
 });
+
+test('Meta từ chối (4xx) thì không gửi lặp; lỗi tạm thời (mạng) thì được thử lại ở lần quét sau', async () => {
+  reply.mockRejectedValueOnce(new Error('Private Reply trả HTTP 400 (mã 10/2018292)'));
+  const rejected = comment();
+  expect(await handleComment(rejected)).toMatchObject({ replied: false, reason: 'meta_rejected' });
+  expect(await handleComment(rejected)).toMatchObject({ replied: false, reason: 'duplicate' });
+
+  reply.mockRejectedValueOnce(new Error('fetch failed'));
+  const transient = comment();
+  await expect(handleComment(transient)).rejects.toThrow('fetch failed');
+  expect(await handleComment(transient)).toMatchObject({ replied: true });
+});
