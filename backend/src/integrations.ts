@@ -6,6 +6,7 @@ import { env, mock } from './env';
 import { botInput, handleMessage } from './bot';
 import { HttpError, psid } from './domain';
 import { sendMessenger } from './messenger';
+import { commentInput, handleComment } from './comments';
 
 import { sheetColumns as columns } from './sheet-columns';
 import { csvField as field } from './csv';
@@ -35,6 +36,9 @@ async function writeCsv(sheet: keyof typeof columns, row: Record<string, string 
 
 export const integrations = Router();
 
+integrations.post('/bot/comment', async (req, res) => {
+  res.json(await handleComment(commentInput.parse(req.body)));
+});
 integrations.post('/bot/message', async (req, res) => {
   res.json(await handleMessage(botInput.parse(req.body)));
 });

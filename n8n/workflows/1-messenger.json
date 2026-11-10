@@ -118,7 +118,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const request = $input.first();\nconst raw = request.binary?.data ? await this.helpers.getBinaryDataBuffer(0, 'data') :\n  (request.json.body?.type === 'Buffer' ? Buffer.from(request.json.body.data) :\n    typeof request.json.body === 'string' ? Buffer.from(request.json.body) : null);\nconst mock = $env.MOCK_INTEGRATIONS !== 'false';\nlet ok = mock;\nif (!mock && raw && $env.META_APP_SECRET) {\n  const crypto = require('crypto');\n  const expected = 'sha256=' + crypto.createHmac('sha256', $env.META_APP_SECRET).update(raw).digest('hex');\n  const received = String(request.json.headers?.['x-hub-signature-256'] || '');\n  ok = /^sha256=[a-f0-9]{64}$/.test(received) && received.length === expected.length && crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));\n}\nif (!ok) return [{ json: { ok: false } }];\nconst body = raw ? JSON.parse(raw.toString('utf8')) : request.json.body;\nconst events = [];\nif (body?.object === 'page') for (const entry of body.entry || []) for (const event of entry.messaging || []) {\n  const message = event.message;\n  const psid = String(event.sender?.id || '');\n  if ((!message?.mid && !event.postback) || message?.is_echo || event.read || event.delivery || !/^\\d{1,40}$/.test(psid)) continue;\n  events.push({ mid: String(message?.mid || event.postback?.mid || (psid + '-postback-' + event.timestamp)).slice(0, 200), psid,\n    ...(message?.sticker_id ? { attachmentType: 'sticker' } : message?.attachments?.length ? { attachmentType: ['image', 'location'].includes(message.attachments[0].type) ? message.attachments[0].type : 'other' } : {}),\n    text: String(message?.quick_reply?.payload || message?.text || event.postback?.payload || '').slice(0, 2000) });\n}\nreturn [{ json: { ok: true, events } }];"
+        "jsCode": "const request = $input.first();\nconst raw = request.binary?.data ? await this.helpers.getBinaryDataBuffer(0, 'data') :\n  (request.json.body?.type === 'Buffer' ? Buffer.from(request.json.body.data) :\n    typeof request.json.body === 'string' ? Buffer.from(request.json.body) : null);\nconst mock = $env.MOCK_INTEGRATIONS !== 'false';\nlet ok = mock;\nif (!mock && raw && $env.META_APP_SECRET) {\n  const crypto = require('crypto');\n  const expected = 'sha256=' + crypto.createHmac('sha256', $env.META_APP_SECRET).update(raw).digest('hex');\n  const received = String(request.json.headers?.['x-hub-signature-256'] || '');\n  ok = /^sha256=[a-f0-9]{64}$/.test(received) && received.length === expected.length && crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));\n}\nif (!ok) return [{ json: { ok: false } }];\nconst body = raw ? JSON.parse(raw.toString('utf8')) : request.json.body;\nconst events = [];\nif (body?.object === 'page') for (const entry of body.entry || []) for (const event of entry.messaging || []) {\n  const message = event.message;\n  const psid = String(event.sender?.id || '');\n  if ((!message?.mid && !event.postback) || message?.is_echo || event.read || event.delivery || !/^\\d{1,40}$/.test(psid)) continue;\n  events.push({ mid: String(message?.mid || event.postback?.mid || (psid + '-postback-' + event.timestamp)).slice(0, 200), psid,\n    ...(message?.sticker_id ? { attachmentType: 'sticker' } : message?.attachments?.length ? { attachmentType: ['image', 'location'].includes(message.attachments[0].type) ? message.attachments[0].type : 'other' } : {}),\n    text: String(message?.quick_reply?.payload || message?.text || event.postback?.payload || '').slice(0, 2000) });\n}\nconst comments = [];\nif (body?.object === 'page') for (const entry of body.entry || []) for (const change of entry.changes || []) {\n  const v = change.value || {};\n  if (change.field !== 'feed' || v.item !== 'comment' || v.verb !== 'add' || !v.comment_id) continue;\n  // Bỏ qua trả lời lồng trong một bình luận khác để không chen vào cuộc thảo luận.\n  if (v.parent_id && v.post_id && String(v.parent_id) !== String(v.post_id)) continue;\n  const fromId = String(v.from?.id || '');\n  if (fromId && fromId === String(entry.id)) continue;\n  comments.push({ commentId: String(v.comment_id).slice(0, 80), postId: String(v.post_id || '').slice(0, 80),\n    pageId: String(entry.id || '').slice(0, 40), fromId: fromId.slice(0, 40), fromName: String(v.from?.name || '').slice(0, 120),\n    text: String(v.message || '').slice(0, 2000) });\n}\nreturn [{ json: { ok: true, events, comments } }];"
       },
       "id": "00000000-0000-4000-8000-000000000006",
       "name": "Kiểm chữ ký và lọc sự kiện",
@@ -475,6 +475,53 @@
           "name": "Long Fish Gmail SMTP"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "return ($('Kiểm chữ ký và lọc sự kiện').first().json.comments || []).map(comment => ({ json: comment }));"
+      },
+      "id": "lfx-comment-split",
+      "name": "Tách bình luận",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        600
+      ],
+      "notes": "Mỗi bình luận mới dưới bài viết của Page thành một mục để trả lời riêng.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:3001/api/internal/bot/comment",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 18000
+        }
+      },
+      "id": "lfx-comment-reply",
+      "name": "Nhắn riêng cho người bình luận",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        600
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "Backend kiểm tra từ khóa, giới hạn, chống trùng rồi gọi Private Reply của Messenger.",
+      "notesInFlow": true
     }
   ],
   "connections": {
@@ -552,6 +599,11 @@
         [
           {
             "node": "Tách tin nhắn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Tách bình luận",
             "type": "main",
             "index": 0
           }
@@ -654,6 +706,17 @@
         [
           {
             "node": "SMTP · Báo hỗ trợ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tách bình luận": {
+      "main": [
+        [
+          {
+            "node": "Nhắn riêng cho người bình luận",
             "type": "main",
             "index": 0
           }

@@ -50,6 +50,29 @@ export async function sendMessenger(psid: string, message: Record<string, unknow
   return { sent: true };
 }
 
+// Private Reply: nhắn riêng cho người vừa bình luận dưới bài viết của Page.
+// Meta cho phép đúng 1 tin cho mỗi bình luận, trong 7 ngày, và không bị giới hạn cửa sổ 24 giờ.
+export async function sendPrivateReply(commentId: string, text: string) {
+  if (mock) {
+    console.info('[Messenger mock] private reply', commentId.slice(0, 8) + '…', JSON.stringify({ text }));
+    return { sent: true, mock: true };
+  }
+  const token = env.META_PAGE_ACCESS_TOKEN;
+  if (!token) throw new Error('META_PAGE_ACCESS_TOKEN chưa cấu hình.');
+  const version = /^v\d+\.\d+$/.test(env.META_GRAPH_VERSION || '') ? env.META_GRAPH_VERSION : 'v23.0';
+  const response = await fetch('https://graph.facebook.com/' + version + '/me/messages', {
+    method: 'POST', signal: AbortSignal.timeout(12000),
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipient: { comment_id: commentId }, message: { text } }),
+  });
+  if (!response.ok) {
+    // Không in nội dung phản hồi: có thể chứa thông tin người dùng. Chỉ giữ mã lỗi của Meta để chẩn đoán.
+    const body = await response.json().catch(() => ({})) as { error?: { code?: number; error_subcode?: number } };
+    throw new Error('Private Reply trả HTTP ' + response.status + ' (mã ' + (body.error?.code ?? '?') + '/' + (body.error?.error_subcode ?? '?') + ')');
+  }
+  return { sent: true };
+}
+
 export async function sendTyping(psid: string) {
   if (mock) { console.info('[Messenger mock] typing_on', psid.slice(0, 4) + '***'); return; }
   const state = await db.conversationState.findUnique({ where: { psid } });
