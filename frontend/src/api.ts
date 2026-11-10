@@ -4,10 +4,11 @@ export type Variant = { id: string; color: string; size: string; sku: string; ge
 export type Product = { id: string; name: string; slug: string; description: string; price: number; images: string[]; category: string; isLiveFish: boolean; careInfo: CareInfo | null; isActive: boolean; variants: Variant[]; alternatives?: { id: string; name: string; slug: string; price: number; images: string[] }[] };
 export type Status = 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
 export type Payment = 'COD' | 'BANK_QR';
+export type PaymentConfig = { bankTransfer: boolean; sandbox: boolean };
 export type Item = { id: string; productName: string; color: string; size: string; gender: string; unit: string; quantity: number; unitPrice: number };
 export type Tracked = { code: string; total: number; status: Status; paymentStatus: 'UNPAID' | 'PAID'; createdAt: string; history: { id?:string; toStatus: Status; changedAt: string; action?:string; detail?:string }[] };
 export type Order = Tracked & { id: string; customerName: string; phone: string; email: string; address: string; note: string; items: Item[]; paymentMethod: Payment; subtotal: number; shippingFee: number; packingFee: number; hasLiveFish: boolean; preferredDelivery: string; internalNote: string };
-export type Confirmation = Pick<Order, 'code' | 'total' | 'items' | 'paymentMethod' | 'subtotal' | 'shippingFee' | 'packingFee' | 'hasLiveFish'> & { qrUrl?: string; mock: boolean };
+export type Confirmation = Pick<Order, 'code' | 'total' | 'items' | 'paymentMethod' | 'subtotal' | 'shippingFee' | 'packingFee' | 'hasLiveFish'> & { qrUrl?: string; mock: boolean; sandbox?: boolean; phone?: string };
 export const labels: Record<Status, string> = { PENDING: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy' };
 export const money = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 export const localDate = (date: string) => new Date(date).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });

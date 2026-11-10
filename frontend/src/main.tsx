@@ -12,6 +12,7 @@ import '@fontsource/bricolage-grotesque/800.css';
 import '@fontsource/patrick-hand/400.css';
 import './style.css';
 import { CreditsPage } from './photos';
+import { applySeo, seoForPath } from './seo';
 
 const Admin = lazy(() => import('./admin').then(module => ({ default: module.Admin }))); 
 
@@ -20,6 +21,8 @@ function StoreLayout() {
   const psid = new URLSearchParams(search).get('psid');
   if (psid && /^\d{1,40}$/.test(psid)) { sessionStorage.setItem('longFish.psid', psid); sessionStorage.setItem('longFish.context', new URLSearchParams(search).get('context') || ''); }
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  // Trang chủ và trang sản phẩm đã có thẻ SEO từ máy chủ (và ProductPage tự cập nhật); chỉ xử lý các trang còn lại.
+  useEffect(() => { const seo = seoForPath(pathname); if (seo) applySeo(seo); }, [pathname]);
   return <>
     <div className="notice">Cá sống được đóng gói riêng khi giao · Xem cam kết cá sống ở trang từng sản phẩm</div>
     <header className="header"><div className="shell nav">

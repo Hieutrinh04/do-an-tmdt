@@ -98,3 +98,14 @@ Hai đường nhận bình luận, dùng cùng bộ xử lý và chống trùng 
 2. Bộ quét dự phòng trong backend (`backend/src/comment-poller.ts`): mỗi `COMMENT_POLL_SECONDS` giây đọc bình luận mới dưới `COMMENT_POLL_POSTS` bài gần nhất, trong `COMMENT_POLL_LOOKBACK_MINUTES` phút gần nhất.
 
 Biến cấu hình: `COMMENT_AUTOREPLY_ENABLED`, `COMMENT_KEYWORDS` (để trống = mọi bình luận), `COMMENT_MAX_PER_HOUR`, `COMMENT_POLL_*`. Đã kiểm chứng thật ngày 10/11/2026 với tài khoản có vai trò trong app: bình luận được nhắn riêng thành công. Chưa kiểm chứng với tài khoản ngoài app (cần Meta xét duyệt quyền).
+
+## Thanh toán chuyển khoản và chế độ Sandbox
+
+- Bán thật: điền `VIETQR_BANK` (mã ngân hàng/BIN), `VIETQR_ACCOUNT`, `VIETQR_ACCOUNT_NAME` trong `.env`, đặt `PAYMENT_SANDBOX=false`. Nếu thiếu thông tin ngân hàng, giao diện tự khóa lựa chọn "Chuyển khoản" và chỉ cho COD (thay vì báo lỗi sau khi bấm đặt).
+- Thử/demo: `PAYMENT_SANDBOX=true`. Backend luôn dùng QR và tài khoản thử (kể cả khi đã nhập ngân hàng thật), trang thanh toán có nhãn "Sandbox", trang xác nhận có nút "Giả lập đã chuyển khoản" gọi `POST /api/payments/sandbox/confirm` (cần mã đơn và số điện thoại khớp) để đánh dấu đơn đã thanh toán, ghi nhật ký "SANDBOX". Endpoint này trả 404 khi sandbox tắt.
+- Đối soát tự động bằng ngân hàng thật: đặt `BANK_WEBHOOK_SECRET` và gọi `POST /api/payments/bank` với header `x-bank-secret`.
+- Kiểm tra cấu hình hiện tại: `GET /api/payments/config` trả `{ bankTransfer, sandbox }`.
+
+## SEO
+
+Nginx chuyển trang chủ, `/product/<slug>`, `/sitemap.xml` và `/robots.txt` cho backend (`backend/src/seo.ts`). Backend lấy `index.html` của giao diện rồi chèn sẵn title, meta description, canonical, Open Graph, Twitter Card và JSON-LD (Organization, WebSite, Product + AggregateOffer với giá VND và tồn kho, BreadcrumbList), nên Facebook, Zalo và Messenger hiện đúng ảnh, tiêu đề, giá khi chia sẻ link, và Google đọc được dù chưa chạy JavaScript. Lỗi hoặc sản phẩm không tồn tại thì nginx trả giao diện tĩnh. Các trang riêng tư (`/checkout`, `/confirmation`, `/track`, `/admin`) có `noindex` và bị chặn trong robots.txt. Địa chỉ gốc của canonical, sitemap và ảnh lấy từ `SITE_URL`: khi có domain thật phải đặt `SITE_URL` đúng domain đó.

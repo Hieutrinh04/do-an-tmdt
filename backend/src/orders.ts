@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from './db';
 import { trustedPsid } from './messenger';
 import { dayKey, mock } from './env';
-import { HttpError, nextStatus, orderDetails, orderInput, orderLines, qrUrl, quote, retryTransaction } from './domain';
+import { HttpError, nextStatus, orderDetails, orderInput, orderLines, paymentSandbox, qrUrl, quote, retryTransaction } from './domain';
 
 export async function checkoutQuote(province: string, items: z.infer<typeof orderLines>) {
   const variants = await db.productVariant.findMany({
@@ -65,7 +65,7 @@ export async function createOrder(input: z.infer<typeof orderInput>) {
     await tx.outboxEvent.create({ data: { kind: 'created', payload: { code, status: order.status } } });
     return {
       code, total: order.total, subtotal, shippingFee, packingFee, hasLiveFish, items: order.items, paymentMethod: order.paymentMethod,
-      qrUrl: order.paymentMethod === 'BANK_QR' ? qrUrl(code, order.total) : undefined, mock,
+      qrUrl: order.paymentMethod === 'BANK_QR' ? qrUrl(code, order.total) : undefined, mock, sandbox: paymentSandbox(),
     };
   }));
 }

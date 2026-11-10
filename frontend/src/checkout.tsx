@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { api, Confirmation, errorText, labels, LivePolicy, localDate, money, Payment, Product, query, Tracked } from './api';
+import { api, Confirmation, errorText, labels, LivePolicy, localDate, money, Payment, PaymentConfig, Product, query, Tracked } from './api';
 import { ProductImage } from './photos';
 import { cartFromSession, receiptKey, saveCart, session } from './cart';
 
@@ -13,6 +13,7 @@ export function Checkout() {
   const [payment, setPayment] = useState<Payment>('COD');
   const [fee, setFee] = useState<{ shippingFee: number; packingFee: number; total: number; liveDeliveryAvailable: boolean; province: string; cartKey: string }>();
   const [policy, setPolicy] = useState<LivePolicy>();
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig>();
   const [doaAccepted, setDoaAccepted] = useState(false);
   const [error, setError] = useState('');
   const [quoteError, setQuoteError] = useState('');
@@ -29,7 +30,10 @@ export function Checkout() {
   useEffect(() => {
     api<string[]>('/shipping/provinces').then(setProvinces).catch(() => {});
     api<LivePolicy>('/shipping/policy').then(setPolicy).catch(() => {});
+    api<PaymentConfig>('/payments/config').then(setPaymentConfig).catch(() => {});
   }, []);
+  const bankUnavailable = paymentConfig?.bankTransfer === false;
+  useEffect(() => { if (bankUnavailable) setPayment('COD'); }, [bankUnavailable]);
   const lines = cart.map(line => {
     const product = catalog[line.slug];
     const variant = product?.variants.find(v => v.id === line.variantId);
@@ -73,7 +77,8 @@ export function Checkout() {
         paymentMethod: payment, psid: sessionStorage.getItem('longFish.psid') || undefined, context: sessionStorage.getItem('longFish.context') || undefined,
         items: cart.map(({ variantId, quantity }) => ({ variantId, quantity })),
       } });
-      sessionStorage.setItem(receiptKey, JSON.stringify(result)); saveCart([]);
+      // Số điện thoại chỉ lưu tạm trong phiên khi ở chế độ sandbox, để nút giả lập chuyển khoản xác thực được đơn.
+      sessionStorage.setItem(receiptKey, JSON.stringify(result.sandbox ? { ...result, phone: String(fields.phone) } : result)); saveCart([]);
       navigate('/confirmation', { replace: true });
     } catch (reason) { setError(errorText(reason)); }
     finally { setBusy(false); }
@@ -100,8 +105,9 @@ export function Checkout() {
           </aside>}
           <fieldset><legend>Thanh toán</legend>
             <label className="radio"><input type="radio" checked={payment === 'COD'} onChange={() => setPayment('COD')} /> Tiền mặt khi nhận hàng</label>
-            <label className="radio"><input type="radio" checked={payment === 'BANK_QR'} onChange={() => setPayment('BANK_QR')} /> Chuyển khoản VietQR</label>
-            {payment === 'BANK_QR' && <small>Mã QR hiện sau khi đặt đơn.</small>}
+            <label className="radio"><input type="radio" disabled={bankUnavailable} checked={payment === 'BANK_QR'} onChange={() => setPayment('BANK_QR')} /> Chuyển khoản VietQR{paymentConfig?.sandbox ? ' (Sandbox – thử nghiệm)' : ''}</label>
+            {bankUnavailable && <small>Chuyển khoản đang tạm ngưng, vui lòng chọn thanh toán khi nhận hàng.</small>}
+            {!bankUnavailable && payment === 'BANK_QR' && <small>{paymentConfig?.sandbox ? 'Môi trường thử: mã QR không dùng để chuyển tiền thật.' : 'Mã QR hiện sau khi đặt đơn.'}</small>}
           </fieldset>
         </div>
         <div className="panel stack summary"><h2>Đơn của bạn</h2>
@@ -126,6 +132,16 @@ export function Checkout() {
 export function Confirm() {
   const receipt = session<Confirmation | null>(receiptKey, null);
   const [copied, setCopied] = useState('');
+  const [paid, setPaid] = useState('');
+  const [payError, setPayError] = useState('');
+  const [paying, setPaying] = useState(false);
+  async function simulatePayment() {
+    if (!receipt?.phone || paying) return;
+    setPaying(true); setPayError('');
+    try { await api('/payments/sandbox/confirm', { method: 'POST', body: { code: receipt.code, phone: receipt.phone } }); setPaid('Đã ghi nhận thanh toán thử. Đơn chuyển sang trạng thái ĐÃ THANH TOÁN.'); }
+    catch (reason) { setPayError(errorText(reason)); }
+    finally { setPaying(false); }
+  }
   if (!receipt) return <section className="shell section"><h1>Tra cứu đơn hàng</h1><Link to="/track">Nhập mã đơn và số điện thoại →</Link></section>;
   return <section className="shell section narrow"><p className="eyebrow">ĐẶT HÀNG THÀNH CÔNG</p><h1>Cảm ơn bạn!</h1>
     <div className="panel stack"><div className="line"><strong>{receipt.code}</strong><button className="outline" onClick={async () => {
@@ -133,8 +149,10 @@ export function Confirm() {
     }}>{copied || 'Sao chép mã'}</button></div>
       {receipt.items.map(item => <div key={item.id} className="line"><span>{item.productName} · {item.color} / {item.size} {item.gender === "Không phân biệt" ? "" : " / " + item.gender} × {item.quantity} {item.unit}</span><span>{money(item.unitPrice * item.quantity)}</span></div>)}
       <div className="totals"><span>Tiền hàng</span><span>{money(receipt.subtotal)}</span><span>Giao hàng</span><span>{money(receipt.shippingFee)}</span><span>Đóng gói cá sống</span><span>{money(receipt.packingFee)}</span><strong>Tổng</strong><strong>{money(receipt.total)}</strong></div>
-      {receipt.qrUrl ? <div className="qr"><h2>Chuyển khoản VietQR</h2>{receipt.mock && <p className="error">Mã dùng thử. Không chuyển khoản.</p>}
-        <img src={receipt.qrUrl} width={240} alt={'VietQR cho đơn ' + receipt.code} /><p>Nội dung chuyển khoản <strong>{receipt.code}</strong></p></div> : <p>Thanh toán khi nhận hàng.</p>}
+      {receipt.qrUrl ? <div className="qr"><h2>Chuyển khoản VietQR</h2>{(receipt.mock || receipt.sandbox) && <p className="error">{receipt.sandbox ? 'SANDBOX – môi trường thử thanh toán. Không chuyển tiền thật.' : 'Mã dùng thử. Không chuyển khoản.'}</p>}
+        <img src={receipt.qrUrl} width={240} alt={'VietQR cho đơn ' + receipt.code} /><p>Nội dung chuyển khoản <strong>{receipt.code}</strong></p>
+          {receipt.sandbox && receipt.phone && !paid && <button type="button" className="outline" disabled={paying} onClick={simulatePayment}>{paying ? 'Đang xử lý…' : 'Giả lập đã chuyển khoản'}</button>}
+          {paid && <p role="status">{paid}</p>}{payError && <p className="error" role="alert">{payError}</p>}</div> : <p>Thanh toán khi nhận hàng.</p>}
       <Link className="button" to={'/track' + query({ code: receipt.code })}>Tra cứu đơn →</Link>
     </div>
   </section>;

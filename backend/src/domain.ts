@@ -74,12 +74,21 @@ export const orderInput = z.object({
   items: orderLines,
 });
 
+// PAYMENT_SANDBOX=true: môi trường thử thanh toán. Luôn dùng tài khoản thử (không bao giờ dùng tài khoản thật),
+// khách thấy nhãn "Sandbox" và có nút giả lập đã chuyển khoản. Không bật trên môi trường bán hàng thật.
+export const paymentSandbox = () => env.PAYMENT_SANDBOX === 'true';
+const validBank = (bank?: string, account?: string) => /^[a-zA-Z0-9]{2,24}$/.test(bank || '') && /^\d{4,30}$/.test(account || '');
+export const bankTransferAvailable = () => paymentSandbox() || env.MOCK_INTEGRATIONS !== 'false' || validBank(env.VIETQR_BANK, env.VIETQR_ACCOUNT);
+
 export function qrUrl(code: string, amount: number) {
-  const bank = env.VIETQR_BANK || (env.MOCK_INTEGRATIONS !== 'false' ? '970436' : '');
-  const account = env.VIETQR_ACCOUNT || (env.MOCK_INTEGRATIONS !== 'false' ? '0000000000' : '');
-  if (!/^[a-zA-Z0-9]{2,24}$/.test(bank) || !/^\d{4,30}$/.test(account)) return undefined;
+  const testing = paymentSandbox();
+  const demo = testing || env.MOCK_INTEGRATIONS !== 'false';
+  const bank = testing ? '970436' : env.VIETQR_BANK || (demo ? '970436' : '');
+  const account = testing ? '0000000000' : env.VIETQR_ACCOUNT || (demo ? '0000000000' : '');
+  if (!validBank(bank, account)) return undefined;
+  const accountName = testing ? 'LONG FISH SANDBOX' : env.VIETQR_ACCOUNT_NAME;
   return 'https://img.vietqr.io/image/' + bank + '-' + account + '-compact2.png?' +
-      new URLSearchParams({ amount: String(amount), addInfo: code, ...(env.VIETQR_ACCOUNT_NAME ? { accountName: env.VIETQR_ACCOUNT_NAME } : {}) });
+      new URLSearchParams({ amount: String(amount), addInfo: code, ...(accountName ? { accountName } : {}) });
 }
 
 export const statusLabels: Record<OrderStatus, string> = {

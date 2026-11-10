@@ -5,6 +5,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { csvDocument } from './csv';
 import { equalSecret } from './messenger';
 import { integrations } from './integrations';
+import { seo } from './seo';
 import { openHandoff } from './bot';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -12,7 +13,7 @@ import { OrderStatus, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { db } from './db';
 import { dayKey, dayStart, addDays, env } from './env';
-import { clean, date, doaPolicy, liveEverywhere, liveProvinces, orderLines, HttpError, orderDetails, orderInput, phone, provinces, psid, qrUrl, required, statusLabels } from './domain';
+import { bankTransferAvailable, paymentSandbox, clean, date, doaPolicy, liveEverywhere, liveProvinces, orderLines, HttpError, orderDetails, orderInput, phone, provinces, psid, qrUrl, required, statusLabels } from './domain';
 import { changeStatus, checkoutQuote, createOrder, reconcileBankPayment, trackOrder, updatePayment } from './orders';
 import { detail, detailPage, products, productInput, productPatch, removeVariant, stock, updateVariant, variantInput, variantPatch } from './catalog';
 import { overview, report } from './stats';
@@ -46,6 +47,7 @@ export function createApp() {
   app.use(cors({ origin: env.FRONTEND_ORIGIN || 'http://localhost:8080' }));
   app.use(express.json({ limit: '256kb' }));
   app.use('/uploads', uploadPublic);
+  app.use('/seo', seo);
   app.get('/api/health', async (_req, res) => {
     await db.product.count();
     res.json({ ok: true });
@@ -79,6 +81,17 @@ export function createApp() {
   api.get('/orders/track', trackLimit, async (req, res) => {
     const query = z.object({ code, phone }).parse(req.query);
     res.set('Cache-Control', 'no-store').json(await trackOrder(query.code, query.phone));
+  });
+  // Giao diện hỏi trước để ẩn/khóa lựa chọn chuyển khoản khi chưa cấu hình ngân hàng, thay vì báo lỗi sau khi bấm đặt.
+  api.get('/payments/config', (_req, res) => res.set('Cache-Control', 'no-store').json({ bankTransfer: bankTransferAvailable(), sandbox: paymentSandbox() }));
+  // Chỉ có khi PAYMENT_SANDBOX=true: giả lập "đã chuyển khoản" để thử luồng đối soát mà không cần tiền thật.
+  api.post('/payments/sandbox/confirm', rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false,
+    message: { message: 'Quá nhiều yêu cầu.' } }), async (req, res) => {
+    if (!paymentSandbox()) throw new HttpError(404, 'Không tìm thấy.');
+    const body = z.object({ code, phone }).parse(req.body);
+    const order = await trackOrder(body.code, body.phone);
+    const paid = await reconcileBankPayment(body.code, order.total, 'SANDBOX');
+    res.set('Cache-Control', 'no-store').json({ ok: true, sandbox: true, code: paid.code, paymentStatus: paid.paymentStatus });
   });
   api.post('/payments/bank', rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: 'draft-8', legacyHeaders: false,
     message: { message: 'Quá nhiều yêu cầu đối soát.' } }), async (req, res) => {

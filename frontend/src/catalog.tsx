@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { api, errorText, LivePolicy, money, Product, query } from './api';
+import { useSeo } from './seo';
 import { cartFromSession, saveCart } from './cart';
 import { ProductImage, PhotoCredit } from './photos';
 
@@ -73,6 +74,7 @@ export function ProductPage() {
   const [photo, setPhoto] = useState(0);
   const [error, setError] = useState('');
   const [policy, setPolicy] = useState<LivePolicy>();
+  useSeo({ title: product ? product.name + ' | Long Fish' : 'Sản phẩm | Long Fish', description: product ? (product.name + ' giá từ ' + money(Math.min(...product.variants.map(row => row.priceOverride ?? product.price))) + '. ' + product.description).slice(0, 160) : undefined });
   useEffect(() => { api<LivePolicy>('/shipping/policy').then(setPolicy).catch(() => {}); }, []);
   useEffect(() => {
     const controller = new AbortController();

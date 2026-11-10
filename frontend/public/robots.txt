@@ -1,3 +1,7 @@
 User-agent: *
+Allow: /
 Disallow: /admin
 Disallow: /api/
+Disallow: /checkout
+Disallow: /confirmation
+Disallow: /track
