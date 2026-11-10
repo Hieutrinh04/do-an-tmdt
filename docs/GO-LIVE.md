@@ -84,3 +84,17 @@ Chạy `npm run db:backup -- --docker` để dùng SQLite `VACUUM INTO` tạo sn
 ## Bảng môi trường
 
 Xem bảng biến đầy đủ trong [env-reference.md](env-reference.md). Secret thật chỉ đặt trong `.env` hoặc credential n8n.
+
+## Tự nhắn riêng cho người bình luận (Private Reply)
+
+Khi có người bình luận dưới bài viết của Page, backend gửi một tin nhắn riêng (lời chào, giá và link nếu bình luận nhắc tên sản phẩm, lời mời nhắn lại để được tư vấn). Meta chỉ cho trả lời riêng **một lần cho mỗi bình luận**, trong **7 ngày**.
+
+Quyền cần có trên mã Trang (kiểm tra bằng debug_token): `pages_messaging`, `pages_read_engagement`, `pages_read_user_content`, `pages_manage_metadata`, `pages_show_list`. Thiếu `pages_read_user_content` thì Meta không gửi sự kiện bình luận và không cho đọc bình luận.
+
+Lấy mã Trang đủ quyền: Graph API Explorer → app Long Fish Bot → Mã người dùng → thêm đủ quyền trên → Generate Access Token → lưu vào `data/user-token.txt` → chạy `npx tsx scripts/meta-page-token.ts` (đổi sang mã Trang không hết hạn, từ chối ghi `.env` nếu thiếu quyền, tự xóa file tạm) → `docker compose up -d`.
+
+Hai đường nhận bình luận, dùng cùng bộ xử lý và chống trùng theo mã bình luận:
+1. Webhook `feed` của Meta (workflow Messenger, nhánh "Tách bình luận"). Khi app còn ở chế độ phát triển, Meta có thể không gửi sự kiện này.
+2. Bộ quét dự phòng trong backend (`backend/src/comment-poller.ts`): mỗi `COMMENT_POLL_SECONDS` giây đọc bình luận mới dưới `COMMENT_POLL_POSTS` bài gần nhất, trong `COMMENT_POLL_LOOKBACK_MINUTES` phút gần nhất.
+
+Biến cấu hình: `COMMENT_AUTOREPLY_ENABLED`, `COMMENT_KEYWORDS` (để trống = mọi bình luận), `COMMENT_MAX_PER_HOUR`, `COMMENT_POLL_*`. Đã kiểm chứng thật ngày 10/11/2026 với tài khoản có vai trò trong app: bình luận được nhắn riêng thành công. Chưa kiểm chứng với tài khoản ngoài app (cần Meta xét duyệt quyền).
