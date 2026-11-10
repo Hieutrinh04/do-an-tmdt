@@ -12,7 +12,7 @@ export function intentFor(phrase: string, attachment = false) {
   if (/bo qua.*(huong dan|quy tac)|giam.*\b90|\bscript\b|drop\s+table|system prompt|ignore.*instructions|mien phi tat ca|doi chinh sach/.test(phrase)) return 'unsafe';
   if (/\b(quay lai bot|bat lai bot|thoat nhan vien)\b/.test(phrase)) return 'resume';
   if (/\b(gap nhan vien|tu van vien|nguoi that|ho tro|noi chuyen voi nhan vien)\b/.test(phrase)) return 'human';
-  if (/\b(khuyen mai|voucher|sale|discount|ma giam gia)\b/.test(phrase)) return 'promotion';
+  if (/\b(khuyen mai|voucher|sale|discount|ma giam gia|giam gia|giam khong|chiet khau|uu dai|bot gia|bot chut|bot khong)\b/.test(phrase)) return 'promotion';
   if (/\b(tra cuu|kiem tra don|ma don|don hang|dh\d{8})/.test(phrase)) return 'track';
   if (/\b(van chuyen|giao hang|giao ca|ship|doa|chet|den bu|bao hanh|nhan hang|bao lau|may ngay)\b/.test(phrase)) return 'shipping';
   if (/^(xin chao|chao|hello|hi|alo|hey)(\s+(shop|ban|em|nhan vien|long fish))?[!?.\s🐟👋]*$/.test(phrase) || phrase === 'danh muc') return 'greeting';
