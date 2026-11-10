@@ -71,6 +71,21 @@ export const catalogPhotos: Record<string, string[]> = {
     "/catalog/photos/den-led-1.webp"
   ],
   "sui-oxy": [
-    "/catalog/photos/sui-oxy-1.webp"
+    "/catalog/photos/sui-oxy-1.webp",
+    "/catalog/photos/sui-oxy-2.webp",
+    "/catalog/photos/sui-oxy-3.webp"
+  ],
+  "betta-plakat-koi": [
+    "/catalog/photos/betta-plakat-koi-1.webp",
+    "/catalog/photos/betta-plakat-koi-2.webp"
+  ],
+  "hat-betta": [
+    "/catalog/photos/hat-betta-1.webp"
+  ],
+  "artemia-say": [
+    "/catalog/photos/artemia-say-1.webp"
+  ],
+  "suoi-be-ca": [
+    "/catalog/photos/suoi-be-ca-1.webp"
   ]
 };

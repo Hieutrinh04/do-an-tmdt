@@ -16,7 +16,10 @@
       "koi betta plakat",
       "koi betta"
     ],
-    "approved": [],
+    "approved": [
+      "File:CTPK Multi M - Betta-Online.jpg",
+      "File:Doubletail Plakat female.JPG"
+    ],
     "reviewNote": "Cần ảnh cá Plakat đuôi ngắn có họa tiết koi rõ và giấy phép thương mại.",
     "photoAdvice": "Chụp ngang cá đuôi ngắn, rõ mảng trắng đỏ đen trên thân. Nền bể sạch, thêm góc nghiêng."
   },
@@ -129,13 +132,8 @@
   },
   "koi-mini": {
     "terms": [
-      "juvenile koi Cyprinus carpio",
-      "young koi fish",
-      "koi fry",
-      "koi tosai",
-      "one year old koi",
-      "shiro utsuri koi",
-      "kinki utsuri koi"
+      "Colourful Koi carp",
+      "Koi carp Cyprinus carpio"
     ],
     "approved": [],
     "reviewNote": "Hai ảnh có xác nhận là koi non chỉ đạt 375 × 500 px. Cần ảnh koi non có cạnh ngắn ít nhất 600 px.",
@@ -201,7 +199,9 @@
       "aquarium fish food pellets",
       "fish food granules"
     ],
-    "approved": [],
+    "approved": [
+      "File:Fish Food pellets.jpg"
+    ],
     "reviewNote": "Ảnh thức ăn viên chung chưa xác nhận là hạt nổi cỡ nhỏ dành cho Betta.",
     "photoAdvice": "Chụp gói/hộp và hạt trên đĩa trắng. Thêm ảnh hạt nổi trong nước."
   },
@@ -211,7 +211,9 @@
       "dried brine shrimp fish food",
       "freeze dried brine shrimp"
     ],
-    "approved": [],
+    "approved": [
+      "File:Live brine shrimp.jpg"
+    ],
     "reviewNote": "Ảnh Artemia tìm được chưa xác nhận là sản phẩm đã sấy.",
     "photoAdvice": "Chụp bao bì và phần artemia đã sấy trên nền trắng, thêm góc cận kết cấu."
   },
@@ -221,7 +223,9 @@
       "glass aquarium tank rectangular",
       "nano aquarium 40 cm"
     ],
-    "approved": [],
+    "approved": [
+      "File:A freshwater aquarium containing plants and small fish.jpg"
+    ],
     "reviewNote": "Ảnh bể trống tìm được có cạnh ngắn 471 px. Ảnh bể nano đã trang trí không minh họa đúng bể trống.",
     "photoAdvice": "Chụp bể trống chính diện và góc 45 độ, nền sáng, thấy đủ cạnh kính và kích thước."
   },
@@ -251,7 +255,9 @@
       "aquarium heater thermostat",
       "aquarium heater"
     ],
-    "approved": [],
+    "approved": [
+      "File:Grzałka do akwarium.jpg"
+    ],
     "reviewNote": "Ảnh ứng viên cho thấy thanh sưởi chìm, chưa xác nhận có núm chỉnh nhiệt.",
     "photoAdvice": "Chụp toàn thanh sưởi và cận núm chỉnh nhiệt, nền trắng, đọc được 50 W."
   },
@@ -261,7 +267,9 @@
       "aquarium air pump"
     ],
     "approved": [
-      "File:Air pump 2.jpg"
+      "File:Air pump 2.jpg",
+      "File:Aquarium-air-pump.jpg",
+      "File:Air pump and stone.jpg"
     ],
     "reviewNote": "Ảnh đủ bộ có logo và nhãn model rõ trên thân máy.",
     "photoAdvice": "Chụp đủ máy, dây và đá sủi trên nền trắng. Thêm ảnh hoạt động trong bể."

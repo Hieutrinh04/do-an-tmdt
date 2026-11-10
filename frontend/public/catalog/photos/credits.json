@@ -433,6 +433,98 @@
       "source": "commons",
       "width": 1200,
       "height": 900
+    },
+    {
+      "file": "/catalog/photos/sui-oxy-2.webp",
+      "hash": "5d35a6c74ca8ceba133dafc369738d695a5261412255acd73831c070ad585abd",
+      "title": "File:Aquarium-air-pump.jpg",
+      "author": "User:Corydoras-adolfoi",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Aquarium-air-pump.jpg",
+      "source": "commons",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "file": "/catalog/photos/sui-oxy-3.webp",
+      "hash": "749f77f8f2317aba5b7e907c1be8346a812fff5cab024c93390928847f408458",
+      "title": "File:Air pump and stone.jpg",
+      "author": "Ofkun",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Air_pump_and_stone.jpg",
+      "source": "commons",
+      "width": 1024,
+      "height": 768
+    }
+  ],
+  "betta-plakat-koi": [
+    {
+      "file": "/catalog/photos/betta-plakat-koi-1.webp",
+      "hash": "577b094fb400f1ca10af852e45b03ca2b23dc0a1279404b648d7226a93a1b38e",
+      "title": "File:CTPK Multi M - Betta-Online.jpg",
+      "author": "Daniella Vereeken",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:CTPK_Multi_M_-_Betta-Online.jpg",
+      "source": "commons",
+      "width": 1056,
+      "height": 792
+    },
+    {
+      "file": "/catalog/photos/betta-plakat-koi-2.webp",
+      "hash": "bfaa6bf74795cd901a451a5b91a1e15b132aa8868f498dd44afebea45cc343e9",
+      "title": "File:Doubletail Plakat female.JPG",
+      "author": "Tobias Schulte",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Doubletail_Plakat_female.JPG",
+      "source": "commons",
+      "width": 1200,
+      "height": 900
+    }
+  ],
+  "hat-betta": [
+    {
+      "file": "/catalog/photos/hat-betta-1.webp",
+      "hash": "4c4be6ac1dd63d020c96f23687fd1863b26c3ba814b0cf540fe32980f851ade9",
+      "title": "File:Fish Food pellets.jpg",
+      "author": "USFWS Mountain-Prairie",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Fish_Food_pellets.jpg",
+      "source": "commons",
+      "width": 960,
+      "height": 720
+    }
+  ],
+  "artemia-say": [
+    {
+      "file": "/catalog/photos/artemia-say-1.webp",
+      "hash": "86b99967370dfddcf6c254d676b980cf92b266e8099193688ae5dd6161917761",
+      "title": "File:Live brine shrimp.jpg",
+      "author": "Saul Dolgin",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Live_brine_shrimp.jpg",
+      "source": "commons",
+      "width": 1200,
+      "height": 900
+    }
+  ],
+  "suoi-be-ca": [
+    {
+      "file": "/catalog/photos/suoi-be-ca-1.webp",
+      "hash": "e4994943842f7a1fbf595f0ba8e40944f32b4bebdfc2c1605a7d6f16b8e4d9e1",
+      "title": "File:Grzałka do akwarium.jpg",
+      "author": "Ewkaa",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Grza%C5%82ka_do_akwarium.jpg",
+      "source": "commons",
+      "width": 1200,
+      "height": 900
     }
   ]
 }
