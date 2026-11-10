@@ -107,6 +107,7 @@ export function ProductPage() {
     <div className="detail">
       <div><div className="product-art tank"><ProductImage slug={product.slug} source={product.images[photo]} alt={product.name} loading="eager" /></div>
         <PhotoCredit slug={product.slug} file={product.images[photo]} />
+        {product.isLiveFish && <small className="photo-credit">Ảnh minh họa dòng cá; màu sắc và hoa văn từng con có thể khác nhau.</small>}
         {product.images.length > 1 && <div className="filters">{product.images.map((src, i) => <button key={i} aria-pressed={i === photo} onClick={() => setPhoto(i)}>Ảnh {i + 1}</button>)}</div>}</div>
       <div className="detail-copy"><p className="eyebrow">{product.category}</p><h1>{product.name}</h1>
         <p className="price">{money(variant?.priceOverride ?? product.price)}</p><p>{product.description}</p>

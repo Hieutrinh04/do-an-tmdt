@@ -102,3 +102,19 @@ RAM ghi nhận trước: backend 50,58 MiB, frontend 8,734 MiB, n8n 233,1 MiB tr
 - Workflow 2 và 3 có nhánh **Có email khách?** → mock ghi log / thật gửi SMTP: xác nhận đơn (sản phẩm, tổng, hướng dẫn VietQR, chính sách cá sống), đổi trạng thái, nhận thanh toán (bỏ qua khi admin tự đánh dấu). Lỗi gửi cho khách không chặn Messenger. Script vá idempotent: `scripts/n8n-customer-email.cjs`.
 - Kiểm tra: backend 123/123; Playwright 23 passed, 1 skipped trên stack cách ly làm mới (dùng `.env.example`, không có khóa thật), gồm kịch bản đặt hàng có email và xác nhận n8n gọi bước gửi email cho khách.
 - Hệ thống chính: đã sao lưu, chạy migration (48 đơn giữ nguyên), vá workflow đang chạy và gắn credential Gmail; `check:integrations` OK cả 6 mục. Chưa gửi email thật cho khách nào.
+
+## Cập nhật 10/11/2026 — kiểm tra độ hoàn thiện
+
+Kết quả chạy lại trực tiếp trên stack `long-fish` (cổng 8080), `MOCK_INTEGRATIONS=false`:
+
+| Kiểm tra | Kết quả | Ghi chú |
+|---|---|---|
+| Lint, build | PASS | `npm run lint`, `npm run build` |
+| Unit/regression | PASS — 127 test | 123 backend + 4 pipeline ảnh |
+| npm audit production | PASS — 0 lỗ hổng | `npm audit --omit=dev` |
+| check:integrations | PASS 6/6 | DB, ảnh, n8n, Messenger (token Trang hợp lệ, có `pages_messaging`), Google Sheets đọc được, SMTP xác thực được. Chưa gửi tin hay email thật. |
+| Bot hội thoại | PASS 88/88 | `bot-accuracy.json` |
+| Dọn môi trường tạm | PASS | Gỡ project `long-fish-e2e-b5`, `long-fish-e2e-b6` bằng `docker:cleanup-temp --yes`; stack chính giữ 27 sản phẩm. |
+| Ghi chú ảnh minh họa trên trang cá | PASS | Thêm dòng "Ảnh minh họa dòng cá; màu sắc và hoa văn từng con có thể khác nhau." để tránh hiểu nhầm khi ảnh khác màu đang chọn. |
+
+Chưa kiểm chứng: đơn thật đi qua Messenger/Sheets/email, AI trong bot, tin ngoài cửa sổ 24 giờ, lịch n8n đúng giờ, triển khai domain công khai. 10 sản phẩm vẫn dùng ảnh minh họa vì chưa có khóa ảnh stock và cần chủ dự án tự chụp.
