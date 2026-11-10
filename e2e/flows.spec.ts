@@ -60,7 +60,7 @@ async function assertNoHorizontalScroll(page: Page) {
 }
 
 test('giao diện không tràn ngang trên các trang chính (desktop và điện thoại)', async ({ page }) => {
-  for (const path of ['/', '/product/neon-tetra', '/checkout', '/track', '/credits']) {
+  for (const path of ['/', '/san-pham/neon-tetra', '/checkout', '/track', '/credits']) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     await assertNoHorizontalScroll(page);
@@ -113,10 +113,10 @@ test('hết hàng hiển thị mẫu cùng nhóm còn hàng', async ({ page, req
   const token = await adminToken(request);
   const soldOut = await createProduct(request, token, 'hetnhom', 0, false);
   const available = await createProduct(request, token, 'conhang', 5, false);
-  await page.goto('/product/' + soldOut.slug);
+  await page.goto('/san-pham/' + soldOut.slug);
   const panel = page.getByLabel('Mẫu cùng nhóm còn hàng');
   await expect(panel).toBeVisible();
-  await expect(panel.getByRole('link', { name: new RegExp('TEST conhang ' + run) })).toHaveAttribute('href', '/product/' + available.slug);
+  await expect(panel.getByRole('link', { name: new RegExp('TEST conhang ' + run) })).toHaveAttribute('href', '/san-pham/' + available.slug);
   await panel.getByRole('link', { name: new RegExp('TEST conhang ' + run) }).click();
   await expect(page).toHaveURL(new RegExp(available.slug));
   await expect(page.getByRole('heading', { name: 'TEST conhang ' + run })).toBeVisible();
@@ -125,7 +125,7 @@ test('hết hàng hiển thị mẫu cùng nhóm còn hàng', async ({ page, req
 test('khách nhập email khi đặt hàng thì n8n gửi email xác nhận (mock)', async ({ page, request }) => {
   const token = await adminToken(request);
   const { slug } = await createProduct(request, token, 'email', 5, false);
-  await page.goto('/product/' + slug);
+  await page.goto('/san-pham/' + slug);
   await page.getByRole('button', { name: /Mua ngay/ }).click();
   await page.getByLabel('Họ và tên').fill('Khách email Playwright');
   await page.getByLabel('Số điện thoại').fill('0900000015');

@@ -189,7 +189,7 @@ tbody tr:hover{background:#f5faf7}
 .admin-alerts .badge{background:var(--tag);color:var(--tag-ink)}
 
 /* Ảnh và nguồn ảnh */
-.photo-credit{margin-top:.6rem}.photo-credit a,.credits-grid a{text-decoration:underline}
+.photo-credit,.photo-note{display:block;margin-top:.6rem}.photo-note{color:var(--muted)}.photo-credit a,.credits-grid a{text-decoration:underline}
 .credits-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));gap:1rem;margin-top:1.5rem}
 .credits-grid>*{min-width:0;overflow-wrap:anywhere}
 .credits-grid img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:.6rem}
@@ -242,3 +242,69 @@ tbody tr:hover{background:#f5faf7}
 }
 
 .stack-tight{display:grid;gap:.3rem}
+
+/* ===== SEO / cấu trúc trang (theo hướng dẫn đồ án): breadcrumb, danh mục, trang nội dung, header, footer ===== */
+.breadcrumb{font-size:.85rem;color:var(--muted);margin:0 0 1rem}
+.breadcrumb ol{display:flex;flex-wrap:wrap;gap:0;list-style:none;margin:0;padding:0}
+.breadcrumb li+li::before{content:"›";margin:0 .5rem;color:var(--muted)}
+.breadcrumb a{color:var(--muted)}.breadcrumb a:hover{text-decoration:underline;text-underline-offset:.2em}
+.breadcrumb [aria-current=page]{color:var(--ink);font-weight:700}
+.category-head{max-width:46rem;margin-bottom:1.2rem}.category-head h1{font-size:clamp(2rem,4.6vw,3.2rem)}
+.category-head p{color:var(--muted);margin:0}
+.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1rem}
+.category-card{display:block;background:#fff;border:1px solid var(--line);border-radius:14px;padding:.7rem .7rem 1rem;transition:transform .15s,box-shadow .15s}
+.category-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(14,42,43,.1)}
+.category-card h3{font-size:1.15rem;margin:.7rem 0 .1rem}.category-card p{margin:0 0 .4rem;color:var(--muted);font-size:.86rem}
+.related{margin-top:2.5rem}.related h2{margin-bottom:1rem}
+.prose{max-width:46rem}.prose h1{font-size:clamp(2rem,4.6vw,3rem)}.prose .lead{font-size:1.08rem;color:var(--muted)}
+.prose-block{margin:1.6rem 0}.prose-block h2{font-size:1.45rem;margin:0 0 .5rem}
+.prose-block ul{padding-left:1.2rem;display:grid;gap:.4rem}.prose-block p{margin:.4rem 0}
+.table-wrap{overflow-x:auto}.prose table{border-collapse:collapse;width:100%;margin:.6rem 0;background:#fff}
+.prose th,.prose td{border:1px solid var(--line);padding:.55rem .75rem;text-align:left}.prose th{background:#f3faf6}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem}
+.contact-list{list-style:none;padding:0;margin:0;display:grid;gap:.45rem}
+.success{color:var(--moss);font-weight:600}
+/* Header: logo · menu · tìm kiếm · giỏ hàng có số lượng; sticky đã có ở .header */
+.nav{flex-wrap:nowrap}
+.menu{display:flex;align-items:center;gap:1rem;flex:1;justify-content:flex-end}
+.menu nav{display:flex;gap:.15rem;align-items:center;font-weight:600;font-size:.92rem}
+.menu nav a{padding:.45rem .75rem;border-radius:999px;white-space:nowrap}
+.menu nav a:hover,.menu nav a.active{background:#fff}
+.dropdown{position:relative}
+.dropdown-menu{display:none;position:absolute;top:100%;left:0;min-width:210px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.4rem;list-style:none;margin:0;box-shadow:0 12px 28px rgba(14,42,43,.14);z-index:40}
+.dropdown:hover .dropdown-menu,.dropdown:focus-within .dropdown-menu{display:block}
+.dropdown-menu a{display:block;border-radius:8px}
+.header-search{display:flex;border:1px solid var(--line);border-radius:999px;background:#fff;overflow:hidden}
+.header-search input{border:0;background:transparent;padding:.45rem .8rem;width:11rem;font:inherit;font-size:.88rem;outline-offset:-2px}
+.header-search button{border:0;background:transparent;padding:0 .7rem;cursor:pointer}
+.cart-link{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:999px;font-size:1.25rem}
+.cart-link:hover{background:#fff}
+.cart-badge{position:absolute;top:2px;right:0;min-width:1.15rem;height:1.15rem;padding:0 .25rem;border-radius:999px;background:var(--fish);color:#fff;font-size:.7rem;font-weight:700;display:grid;place-items:center}
+.menu-toggle{display:none;border:1px solid var(--line);background:#fff;border-radius:10px;min-width:44px;min-height:44px;font-size:1.2rem;cursor:pointer}
+/* Footer 4 cột + dải cuối */
+.site-footer{border-top:1px solid var(--line);margin-top:3rem;padding-top:2rem;color:var(--muted);font-size:.9rem;background:#f3faf6}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:2rem}
+.footer-grid h2{font-size:1rem;color:var(--ink);margin:0 0 .6rem;letter-spacing:0}
+.footer-grid ul{list-style:none;padding:0;margin:0;display:grid;gap:.35rem}.footer-grid a:hover{text-decoration:underline}
+.social{display:flex;gap:.8rem;flex-wrap:wrap}.social a{font-weight:600;color:var(--moss)}
+.footer-bottom{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.6rem;border-top:1px solid var(--line);margin-top:1.5rem;padding:1rem 0;font-size:.82rem}
+@media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr}.header-search input{width:8rem}}
+@media(max-width:767px){
+  .nav{flex-wrap:wrap}
+  .menu-toggle{display:inline-flex;align-items:center;justify-content:center;margin-left:auto}
+  .menu{display:none;flex-direction:column;align-items:stretch;order:5;flex-basis:100%;padding-bottom:.8rem}
+  .menu.open{display:flex}
+  .menu nav{flex-direction:column;align-items:stretch}.menu nav a{display:block;padding:.7rem .8rem}
+  .dropdown-menu{display:block;position:static;box-shadow:none;border:0;background:transparent;padding:0 0 0 1rem}
+  .header-search input{width:100%}.header-search{width:100%}
+  .contact-grid,.footer-grid{grid-template-columns:1fr}
+}
+
+/* Khung giữ chỗ khi đang tải dữ liệu: cùng kích thước với thẻ thật để trang không bị đẩy (CLS) */
+.skeleton{background:linear-gradient(90deg,#e3efe9,#f1f8f4,#e3efe9);background-size:200% 100%;border-radius:14px;animation:shimmer 1.4s linear infinite}
+.category-card.skeleton{height:268px;border:1px solid var(--line)}
+.product-card.skeleton{min-height:330px}
+@keyframes shimmer{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.skeleton{animation:none}}
+.category-card .product-art{aspect-ratio:4/3}
+.site-footer{min-height:320px}

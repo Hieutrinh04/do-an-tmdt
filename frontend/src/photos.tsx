@@ -33,7 +33,9 @@ export function ProductImage({ slug, source, thumbnail = false, ...props }: Omit
   const initial = thumbnail && resolved ? thumbnailPath(resolved) : resolved || fallback;
   const [failed, setFailed] = useState<string[]>([]);
   const url = failed.includes(initial) ? source && !failed.includes(source) ? source : fallback : initial;
-  return <span className={'product-image-wrap ' + (props.className || '')}><img {...props} className={undefined} src={url} width={1200} height={900}
+  // Ảnh lớn của sản phẩm có sẵn bản 480 px: điện thoại tải bản nhỏ để LCP nhanh hơn.
+  const responsive = !thumbnail && /^\/(catalog\/photos|uploads)\/[\w-]+\.webp$/.test(url) && !url.endsWith('-thumb.webp');
+  return <span className={'product-image-wrap ' + (props.className || '')}><img {...props} className={undefined} src={url} width={1200} height={900} {...(responsive ? { srcSet: thumbnailPath(url) + ' 480w, ' + url + ' 1200w', sizes: '(max-width: 700px) 92vw, 600px' } : {})}
     fetchPriority={props.loading === 'eager' ? 'high' : props.fetchPriority} loading={props.loading || 'lazy'}
     onError={() => { if (url !== fallback) setFailed(previous => [...previous, url]); }} />
     {url.endsWith('.svg') && <small className="illustration-label">Ảnh minh họa</small>}</span>;

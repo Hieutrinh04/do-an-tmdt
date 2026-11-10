@@ -56,7 +56,7 @@ test('bình luận nhắc tên sản phẩm: gửi giá và link sản phẩm l�
   const result = await handleComment(comment({ text: 'Betta Halfmoon còn không ạ' }));
   expect(result).toMatchObject({ replied: true, product: 'betta-halfmoon' });
   const text = (reply.mock.calls[0] as unknown as [string, string])[1];
-  expect(text).toContain('/product/betta-halfmoon');
+  expect(text).toContain('/san-pham/betta-halfmoon');
   const product = await db.product.findUniqueOrThrow({ where: { slug: 'betta-halfmoon' } });
   expect(text).toContain(new Intl.NumberFormat('vi-VN').format(product.price));
 });

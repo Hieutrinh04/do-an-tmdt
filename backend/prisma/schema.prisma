@@ -174,3 +174,13 @@ model MessengerReceipt {
   @@index([createdAt])
 }
 
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+}

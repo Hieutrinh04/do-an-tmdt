@@ -6,6 +6,8 @@ import { csvDocument } from './csv';
 import { equalSecret } from './messenger';
 import { integrations } from './integrations';
 import { seo } from './seo';
+import { fitDescription, fitTitle } from './seo-text';
+import { categories, pageBySlug, siteInfo } from './site-content';
 import { openHandoff } from './bot';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -73,6 +75,29 @@ export function createApp() {
   api.get('/photo-credits', publicLimit, async (_req, res) => res.set('Cache-Control', 'no-store').json(await uploadedPhotoCredits()));
   api.get('/shipping/provinces', (_req, res) => res.json(provinces));
   api.get('/shipping/policy', (_req, res) => res.json({ doaPolicy, liveProvinces, liveEverywhere }));
+  // Nội dung cố định phục vụ SEO: thông tin cửa hàng, danh mục có mô tả, trang giới thiệu/chính sách.
+  api.get('/site', (_req, res) => res.set('Cache-Control', 'public, max-age=300').json(siteInfo()));
+  api.get('/categories', publicLimit, async (_req, res) => {
+    const counts = await db.product.groupBy({ by: ['category'], where: { isActive: true, variants: { some: { isActive: true } } }, _count: { _all: true } });
+    res.set('Cache-Control', 'public, max-age=60').json(categories
+      .map(item => ({ ...item, count: counts.find(row => row.category === item.name)?._count._all ?? 0 })).filter(item => item.count > 0));
+  });
+  api.get('/pages/:slug', (req, res) => {
+    const page = pageBySlug(String(req.params.slug));
+    if (!page) throw new HttpError(404, 'Không tìm thấy trang.');
+    res.set('Cache-Control', 'public, max-age=300').json({ ...page, title: fitTitle(page.title, []), description: fitDescription(page.description) });
+  });
+  // Biểu mẫu Liên hệ: lưu vào database cho admin xem. Ô "website" là bẫy chống bot: người thật không thấy và không điền.
+  api.post('/contact', rateLimit({ windowMs: 10 * 60_000, limit: 5, standardHeaders: 'draft-8', legacyHeaders: false,
+    message: { message: 'Bạn gửi quá nhiều tin nhắn. Vui lòng thử lại sau ít phút.' } }), async (req, res) => {
+    const body = z.object({
+      name: required(100), email: z.string().trim().max(254).email('Email không hợp lệ.'), message: required(2000).pipe(z.string().min(10, 'Nội dung quá ngắn.')),
+      website: z.string().max(200).optional(),
+    }).parse(req.body);
+    if (body.website) { res.status(201).json({ ok: true }); return; }
+    await db.contactMessage.create({ data: { name: body.name, email: body.email, message: body.message } });
+    res.status(201).json({ ok: true });
+  });
   api.post('/shipping/quote', async (req, res) => {
     const body = z.object({ province: required(100), items: orderLines }).parse(req.body);
     res.json(await checkoutQuote(body.province, body.items));
@@ -231,6 +256,11 @@ export function createApp() {
       return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: orderDetails });
     });
     res.json(order);
+  });
+  api.get('/admin/contacts', async (_req, res) => res.json(await db.contactMessage.findMany({ orderBy: [{ status: 'asc' }, { createdAt: 'desc' }], take: 200 })));
+  api.patch('/admin/contacts/:id', async (req, res) => {
+    z.object({ status: z.literal('DONE') }).parse(req.body);
+    res.json(await db.contactMessage.update({ where: { id: id.parse(req.params.id) }, data: { status: 'DONE' } }));
   });
   api.get('/admin/handoffs', async (_req, res) => res.json(await db.handoffRequest.findMany({ orderBy: [{ status: 'desc' }, { createdAt: 'desc' }] })));
   api.patch('/admin/handoffs/:id', async (req, res) => {

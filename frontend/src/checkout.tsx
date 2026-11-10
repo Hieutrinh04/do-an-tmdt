@@ -112,7 +112,7 @@ export function Checkout() {
         </div>
         <div className="panel stack summary"><h2>Đơn của bạn</h2>
           {lines.map(line => <div className="line" key={line.variantId}>
-            {line.product && <ProductImage className="thumb" slug={line.slug} source={line.product.images[0]} thumbnail alt="" />}
+            {line.product && <ProductImage className="thumb" slug={line.slug} source={line.product.images[0]} thumbnail alt={line.product.name} />}
             <div><strong>{line.product?.name || 'Sản phẩm không khả dụng'}</strong><small>{line.variant ? line.variant.color + ' / ' + line.variant.size + (line.product?.isLiveFish ? ' / ' + line.variant.gender : '') + ' · ' + line.variant.unit : 'Phân loại không khả dụng'}</small>
               {line.variant && line.quantity > line.variant.stock && <small className="error">Chỉ còn {line.variant.stock} sản phẩm.</small>}
               <button className="text-button" type="button" onClick={() => update(line.variantId, 0)}>Xóa</button></div>

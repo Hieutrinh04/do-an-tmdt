@@ -57,7 +57,7 @@ test('catalog, filters, Vietnamese search, loaded photos and attribution', async
 });
 
 test('fish detail, minimum quantity, care and SVG label', async ({ page }, info) => {
-  await page.goto('/product/neon-tetra');
+  await page.goto('/san-pham/neon-tetra');
   await expect(page.getByRole('heading', { name: 'Neon Tetra' })).toBeVisible();
   await page.getByRole('button', { name: 'Xanh ánh kim', exact: true }).click();
   await expect(page.getByRole('button', { name: /Mua ngay/ })).toBeDisabled();
@@ -74,10 +74,10 @@ test('fish detail, minimum quantity, care and SVG label', async ({ page }, info)
   await expect(page.getByText('Cam kết cá sống khi nhận')).toBeVisible();
   await expect(page.locator('.photo-credit')).toContainText('Ảnh:');
   await capture(page, info, 'product');
-  await page.goto('/product/betta-plakat-koi');
+  await page.goto('/san-pham/betta-plakat-koi');
   await expect(page.getByText('Ảnh minh họa')).toBeVisible();
   for (const slug of ['betta-halfmoon', 'ca-dia']) {
-    await page.goto('/product/' + slug);
+    await page.goto('/san-pham/' + slug);
     await expect(page.locator('.detail')).toBeVisible();
     await expect.poll(() => page.locator('.detail .product-art img').evaluate(img => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
     await capture(page, info, 'product-' + slug);
@@ -85,7 +85,7 @@ test('fish detail, minimum quantity, care and SVG label', async ({ page }, info)
 });
 
 async function checkout(page: Page, payment: 'COD' | 'BANK_QR', info: TestInfo) {
-  await page.goto('/product/betta-halfmoon');
+  await page.goto('/san-pham/betta-halfmoon');
   await page.getByRole('button', { name: /Mua ngay/ }).click();
   await page.getByLabel('Họ và tên').fill('Khách thử Playwright');
   await page.getByLabel('Số điện thoại').fill(phone);

@@ -1,0 +1,11 @@
+{
+  "at": "2026-11-10T14:32:50.248Z",
+  "base": "http://localhost:8080",
+  "total": 655,
+  "passed": 655,
+  "failed": [],
+  "slugNotes": {
+    "/san-pham/guppy-snake-skin": "Cá bảy màu Snake Skin ≠ slug guppy-snake-skin",
+    "/san-pham/suoi-be-ca": "Sưởi có chỉnh nhiệt ≠ slug suoi-be-ca"
+  }
+}

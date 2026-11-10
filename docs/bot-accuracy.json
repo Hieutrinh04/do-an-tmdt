@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-10T10:06:04.840Z",
-  "cases": 88,
-  "passed": 88,
+  "at": "2026-11-10T14:32:04.727Z",
+  "cases": 94,
+  "passed": 94,
   "accuracy": 100,
   "groups": [
     {
@@ -72,8 +72,8 @@
     },
     {
       "group": "Thông tin thiếu",
-      "total": 4,
-      "passed": 4,
+      "total": 10,
+      "passed": 10,
       "accuracy": 100
     },
     {

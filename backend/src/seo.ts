@@ -1,8 +1,10 @@
 import { Router, Request } from 'express';
 import { db } from './db';
 import { env } from './env';
+import { clip, fitDescription, fitTitle, TITLE_MAX, DESCRIPTION_MIN, DESCRIPTION_MAX } from './seo-text';
+import { categories, categoryByName, categoryBySlug, pageBySlug, siteInfo, sitePages } from './site-content';
 
-// SEO phía máy chủ: nginx chuyển trang chủ, trang sản phẩm, sitemap và robots.txt vào đây.
+// SEO phía máy chủ: nginx chuyển trang chủ, /san-pham/<slug>, /danh-muc/<slug>, các trang nội dung, /sitemap.xml và /robots.txt vào đây.
 // Mỗi trang trả về chính index.html của giao diện nhưng đã chèn sẵn title, mô tả, canonical, Open Graph và JSON-LD,
 // để bộ thu thập không chạy JavaScript (Facebook, Zalo, Messenger) vẫn đọc được. Giao diện React vẫn chạy như bình thường.
 
@@ -11,10 +13,7 @@ const money = (amount: number) => new Intl.NumberFormat('vi-VN').format(amount) 
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escapeXml = (value: string) => escapeHtml(value).replace(/'/g, '&apos;');
 const jsonLd = (data: unknown) => '<script type="application/ld+json">' + JSON.stringify(data).replace(/</g, '\\u003c') + '</script>';
-const clip = (value: string, max: number) => {
-  const text = value.replace(/\s+/g, ' ').trim();
-  return text.length <= max ? text : text.slice(0, max - 1).replace(/\s+\S*$/, '') + '…';
-};
+export { fitDescription, fitTitle, TITLE_MAX, DESCRIPTION_MIN, DESCRIPTION_MAX };
 
 function baseUrl(req: Request) {
   const configured = (env.SITE_URL || '').trim().replace(/\/$/, '');
@@ -34,7 +33,7 @@ async function loadShell() {
   return html;
 }
 
-type Meta = { title: string; description: string; canonical: string; image?: string; type?: 'website' | 'product'; data?: unknown[] };
+type Meta = { title: string; description: string; canonical: string; image?: string; imageSize?: [number, number]; type?: 'website' | 'product'; data?: unknown[] };
 function render(html: string, meta: Meta) {
   const name = shopName();
   const tags = [
@@ -48,6 +47,7 @@ function render(html: string, meta: Meta) {
     '<meta property="og:description" content="' + escapeHtml(meta.description) + '" />',
     '<meta property="og:url" content="' + escapeHtml(meta.canonical) + '" />',
     ...(meta.image ? ['<meta property="og:image" content="' + escapeHtml(meta.image) + '" />', '<meta name="twitter:image" content="' + escapeHtml(meta.image) + '" />'] : []),
+    ...(meta.image && meta.imageSize ? ['<meta property="og:image:width" content="' + meta.imageSize[0] + '" />', '<meta property="og:image:height" content="' + meta.imageSize[1] + '" />'] : []),
     '<meta name="twitter:card" content="' + (meta.image ? 'summary_large_image' : 'summary') + '" />',
     '<meta name="twitter:title" content="' + escapeHtml(meta.title) + '" />',
     '<meta name="twitter:description" content="' + escapeHtml(meta.description) + '" />',
@@ -59,8 +59,30 @@ function render(html: string, meta: Meta) {
     .replace(/<\/head>/i, tags + '\n</head>');
 }
 
+// Ảnh Open Graph mặc định 1200×630 (hướng dẫn: Social Graph).
+const defaultImage = (base: string) => base + '/og-default.jpg';
+const OG_SIZE: [number, number] = [1200, 630];
+
+function socialLinks() {
+  const info = siteInfo();
+  return [info.facebook, info.tiktok, info.instagram].filter(Boolean);
+}
+
 function organization(base: string) {
-  return { '@context': 'https://schema.org', '@type': 'Organization', name: shopName(), url: base, logo: base + '/fish.svg' };
+  const info = siteInfo();
+  return {
+    '@context': 'https://schema.org', '@type': 'Organization', name: info.name, url: base, logo: base + '/fish.svg',
+    ...(socialLinks().length ? { sameAs: socialLinks() } : {}),
+    ...(info.phone || info.email ? { contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', areaServed: 'VN', availableLanguage: 'vi',
+      ...(info.phone ? { telephone: info.phone } : {}), ...(info.email ? { email: info.email } : {}) } } : {}),
+  };
+}
+
+function breadcrumb(base: string, trail: { name: string; path: string }[]) {
+  return {
+    '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+    itemListElement: trail.map((item, index) => ({ '@type': 'ListItem', position: index + 1, name: item.name, item: base + item.path })),
+  };
 }
 
 export const seo = Router();
@@ -73,23 +95,51 @@ export const pageCsp = [
   "style-src 'self' https: 'unsafe-inline'", "connect-src 'self'", 'upgrade-insecure-requests',
 ].join(';');
 
-const sendHtml = (res: import('express').Response, html: string) => {
+const sendHtml = (res: import('express').Response, html: string) =>
   res.set('Content-Type', 'text/html; charset=utf-8').set('Cache-Control', 'public, max-age=60')
     .set('Content-Security-Policy', pageCsp).send(html);
-};
 
 seo.get('/home', async (req, res) => {
   const base = baseUrl(req);
   const name = shopName();
   sendHtml(res, render(await loadShell(), {
-    title: name + ' · Cá cảnh nước ngọt, thủy sinh và thiết bị',
-    description: 'Mua cá cảnh nước ngọt (Betta, Guppy, Neon, cá vàng, Koi…), cây thủy sinh, thức ăn và thiết bị tại ' + name + '. Xem thông số nuôi, tồn kho và chính sách giao cá sống.',
-    canonical: base + '/', image: base + '/catalog/photos/betta-halfmoon-1.webp',
+    title: fitTitle(name + ' – Cá Cảnh Nước Ngọt & Thủy Sinh', []),
+    description: fitDescription('Mua cá cảnh nước ngọt Betta, Guppy, Neon Tetra, Koi mini, cây thủy sinh, thức ăn và thiết bị tại ' + name + '. Xem thông số nuôi, tồn kho rõ ràng, đặt hàng ngay.'),
+    canonical: base + '/', image: defaultImage(base), imageSize: OG_SIZE,
     data: [organization(base), { '@context': 'https://schema.org', '@type': 'WebSite', name, url: base }],
   }));
 });
 
-seo.get('/product/:slug', async (req, res) => {
+async function productsOf(categoryName: string) {
+  return db.product.findMany({
+    where: { category: categoryName, isActive: true, variants: { some: { isActive: true } } },
+    include: { variants: { where: { isActive: true } } }, orderBy: { createdAt: 'asc' },
+  });
+}
+
+seo.get('/danh-muc/:slug', async (req, res) => {
+  const item = categoryBySlug(String(req.params.slug));
+  if (!item) { res.status(404).end(); return; }
+  const rows = await productsOf(item.name);
+  if (!rows.length) { res.status(404).end(); return; }
+  const base = baseUrl(req);
+  const name = shopName();
+  const canonical = base + '/danh-muc/' + item.slug;
+  const year = new Date().getFullYear();
+  const low = Math.min(...rows.flatMap(row => row.variants.map(variant => variant.priceOverride ?? row.price)));
+  sendHtml(res, render(await loadShell(), {
+    title: fitTitle(item.name + ' — ' + name, [' | Hàng Mới ' + year, ' | Giá Tốt', '']),
+    description: fitDescription('Mua ' + item.name + ' tại ' + name + ': ' + rows.length + ' sản phẩm, giá từ ' + money(low) + '. ' + item.description),
+    canonical, image: defaultImage(base), imageSize: OG_SIZE,
+    data: [
+      breadcrumb(base, [{ name: 'Trang chủ', path: '/' }, { name: item.name, path: '/danh-muc/' + item.slug }]),
+      { '@context': 'https://schema.org', '@type': 'CollectionPage', name: item.name, description: item.description, url: canonical,
+        mainEntity: { '@type': 'ItemList', numberOfItems: rows.length, itemListElement: rows.map((row, index) => ({ '@type': 'ListItem', position: index + 1, url: base + '/san-pham/' + row.slug, name: row.name })) } },
+    ],
+  }));
+});
+
+seo.get('/san-pham/:slug', async (req, res) => {
   const product = await db.product.findFirst({
     where: { slug: String(req.params.slug), isActive: true },
     include: { variants: { where: { isActive: true }, orderBy: { sku: 'asc' } } },
@@ -102,11 +152,14 @@ seo.get('/product/:slug', async (req, res) => {
   const high = Math.max(...prices);
   const inStock = product.variants.some(row => row.stock >= row.minQty);
   const images = (Array.isArray(product.images) ? product.images : []).filter((value): value is string => typeof value === 'string');
-  const canonical = base + '/product/' + product.slug;
+  const canonical = base + '/san-pham/' + product.slug;
   const image = images[0] ? absolute(base, images[0]) : undefined;
-  const description = clip(product.name + ' giá từ ' + money(low) + (inStock ? ' – còn hàng. ' : ' – tạm hết hàng. ') + product.description, 160);
+  const group = categoryByName(product.category);
+  const trail = [{ name: 'Trang chủ', path: '/' }, ...(group ? [{ name: group.name, path: '/danh-muc/' + group.slug }] : []), { name: product.name, path: '/san-pham/' + product.slug }];
   sendHtml(res, render(await loadShell(), {
-    title: clip(product.name + ' – ' + product.category + ' | ' + name, 70), description, canonical, image, type: 'product',
+    title: fitTitle(product.name + ' — ' + name, [' | Giá Tốt', '']),
+    description: fitDescription(product.name + ' giá từ ' + money(low) + (inStock ? ' – còn hàng. ' : ' – tạm hết hàng. ') + product.description),
+    canonical, image, type: 'product',
     data: [
       {
         '@context': 'https://schema.org', '@type': 'Product', name: product.name, description: clip(product.description, 500),
@@ -117,22 +170,44 @@ seo.get('/product/:slug', async (req, res) => {
           availability: 'https://schema.org/' + (inStock ? 'InStock' : 'OutOfStock'), seller: { '@type': 'Organization', name },
         },
       },
-      {
-        '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Trang chủ', item: base + '/' },
-          { '@type': 'ListItem', position: 2, name: product.category, item: base + '/?category=' + encodeURIComponent(product.category) },
-          { '@type': 'ListItem', position: 3, name: product.name, item: canonical },
-        ],
-      },
+      breadcrumb(base, trail),
     ],
+  }));
+});
+
+seo.get('/trang/:slug', async (req, res) => {
+  const page = pageBySlug(String(req.params.slug));
+  if (!page) { res.status(404).end(); return; }
+  const base = baseUrl(req);
+  const info = siteInfo();
+  const canonical = base + page.path;
+  const data: unknown[] = [breadcrumb(base, [{ name: 'Trang chủ', path: '/' }, { name: page.h1, path: page.path }])];
+  if (page.slug === 'lien-he') {
+    data.push({ '@context': 'https://schema.org', '@type': 'ContactPage', name: page.title, url: canonical });
+    // LocalBusiness chỉ khai báo khi cửa hàng đã cấu hình địa chỉ thật (SHOP_ADDRESS), tránh dữ liệu giả.
+    if (info.address) data.push({
+      '@context': 'https://schema.org', '@type': 'LocalBusiness', name: info.name, url: base, image: defaultImage(base), address: { '@type': 'PostalAddress', streetAddress: info.address, addressCountry: 'VN' },
+      ...(info.phone ? { telephone: info.phone } : {}), ...(info.email ? { email: info.email } : {}), openingHours: info.hours,
+      ...(socialLinks().length ? { sameAs: socialLinks() } : {}),
+    });
+  }
+  sendHtml(res, render(await loadShell(), {
+    title: fitTitle(page.title, []), description: fitDescription(page.description),
+    canonical, image: defaultImage(base), imageSize: OG_SIZE, data,
   }));
 });
 
 seo.get('/sitemap.xml', async (req, res) => {
   const base = baseUrl(req);
-  const rows = await db.product.findMany({ where: { isActive: true, variants: { some: { isActive: true } } }, select: { slug: true }, orderBy: { createdAt: 'asc' } });
-  const urls = [{ loc: base + '/', freq: 'daily', priority: '1.0' }, { loc: base + '/credits', freq: 'monthly', priority: '0.2' },
-    ...rows.map(row => ({ loc: base + '/product/' + row.slug, freq: 'weekly', priority: '0.8' }))];
+  const rows = await db.product.findMany({ where: { isActive: true, variants: { some: { isActive: true } } }, select: { slug: true, category: true }, orderBy: { createdAt: 'asc' } });
+  const present = new Set(rows.map(row => row.category));
+  const urls = [
+    { loc: base + '/', freq: 'daily', priority: '1.0' },
+    ...categories.filter(item => present.has(item.name)).map(item => ({ loc: base + '/danh-muc/' + item.slug, freq: 'weekly', priority: '0.9' })),
+    ...rows.map(row => ({ loc: base + '/san-pham/' + row.slug, freq: 'weekly', priority: '0.8' })),
+    ...sitePages().map(page => ({ loc: base + page.path, freq: 'monthly', priority: page.slug === 'gioi-thieu' || page.slug === 'lien-he' ? '0.6' : '0.4' })),
+    { loc: base + '/credits', freq: 'monthly', priority: '0.2' },
+  ];
   res.set('Content-Type', 'application/xml; charset=utf-8').set('Cache-Control', 'public, max-age=3600').send(
     '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     urls.map(row => '  <url><loc>' + escapeXml(row.loc) + '</loc><changefreq>' + row.freq + '</changefreq><priority>' + row.priority + '</priority></url>').join('\n') +

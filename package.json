@@ -27,7 +27,8 @@
     "lighthouse": "node scripts/lighthouse.cjs",
     "docker:cleanup-temp": "tsx scripts/docker-cleanup-temp.ts",
     "smoke:public": "tsx scripts/smoke-public.ts",
-    "backup:rotate": "tsx scripts/backup-rotate.ts"
+    "backup:rotate": "tsx scripts/backup-rotate.ts",
+    "seo:audit": "node scripts/seo-audit.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",

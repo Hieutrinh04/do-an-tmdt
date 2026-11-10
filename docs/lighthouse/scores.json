@@ -1,24 +1,78 @@
-[
-  {
-    "page": "home",
-    "url": "http://localhost:8080/",
-    "at": "2026-11-09T07:58:33.628Z",
-    "scores": {
+{
+  "at": "2026-11-10T14:31:36.385Z",
+  "base": "http://localhost:8080",
+  "rows": [
+    {
+      "form": "mobile",
+      "page": "home",
+      "performance": 75,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "seo": 100,
+      "lcpSeconds": 4.59,
+      "cls": 0.003,
+      "tbtMs": 61,
+      "ttfbMs": 15
+    },
+    {
+      "form": "mobile",
+      "page": "category",
+      "performance": 83,
+      "accessibility": 98,
+      "bestPractices": 100,
+      "seo": 100,
+      "lcpSeconds": 4.04,
+      "cls": 0,
+      "tbtMs": 64,
+      "ttfbMs": 29
+    },
+    {
+      "form": "mobile",
+      "page": "product",
+      "performance": 79,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "seo": 100,
+      "lcpSeconds": 4.66,
+      "cls": 0,
+      "tbtMs": 118,
+      "ttfbMs": 15
+    },
+    {
+      "form": "desktop",
+      "page": "home",
       "performance": 99,
       "accessibility": 100,
-      "best-practices": 100,
-      "seo": 100
-    }
-  },
-  {
-    "page": "product",
-    "url": "http://localhost:8080/product/neon-tetra",
-    "at": "2026-11-09T07:58:49.279Z",
-    "scores": {
-      "performance": 98,
+      "bestPractices": 100,
+      "seo": 100,
+      "lcpSeconds": 0.92,
+      "cls": 0.02,
+      "tbtMs": 0,
+      "ttfbMs": 2
+    },
+    {
+      "form": "desktop",
+      "page": "category",
+      "performance": 99,
+      "accessibility": 98,
+      "bestPractices": 100,
+      "seo": 100,
+      "lcpSeconds": 0.78,
+      "cls": 0.016,
+      "tbtMs": 0,
+      "ttfbMs": 4
+    },
+    {
+      "form": "desktop",
+      "page": "product",
+      "performance": 99,
       "accessibility": 100,
-      "best-practices": 100,
-      "seo": 100
+      "bestPractices": 100,
+      "seo": 100,
+      "lcpSeconds": 0.93,
+      "cls": 0.001,
+      "tbtMs": 0,
+      "ttfbMs": 2
     }
-  }
-]
+  ]
+}

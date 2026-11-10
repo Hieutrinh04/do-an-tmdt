@@ -52,7 +52,7 @@ export async function handleComment(input: z.infer<typeof commentInput>) {
   const lines = [
     'Chào' + (name ? ' ' + name : ' bạn') + ', Long Fish cảm ơn bạn đã quan tâm 🐟',
     matched
-      ? matched.name + ' hiện có giá từ ' + money(matched.price) + '. Xem chi tiết và đặt hàng: ' + site + '/product/' + matched.slug
+      ? matched.name + ' hiện có giá từ ' + money(matched.price) + '. Xem chi tiết và đặt hàng: ' + site + '/san-pham/' + matched.slug
       : 'Bạn đang tìm cá hay phụ kiện nào? Xem sản phẩm tại: ' + site,
     'Bạn nhắn lại tin này, Long Fish sẽ tư vấn cá hợp với bể của bạn và gửi link chốt đơn nhé.',
   ];

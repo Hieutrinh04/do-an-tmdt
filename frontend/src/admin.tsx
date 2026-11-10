@@ -174,5 +174,24 @@ function Support({ token }: AdminProps) {
       <small>{localDate(row.createdAt)} · {row.reason}</small><p>{row.lastMessage}</p>
       {row.status === 'OPEN' && <button className="button" disabled={!!pending} onClick={() => finish(row.id)}>Hoàn tất và bật lại bot</button>}
     </article>)}
+    <Contacts token={token} />
   </div>;
 }
+
+type Contact = { id: string; name: string; email: string; message: string; status: 'NEW' | 'DONE'; createdAt: string };
+function Contacts({ token }: AdminProps) {
+  const [rows, setRows] = useState<Contact[]>([]);
+  const [error, setError] = useState('');
+  useEffect(() => { api<Contact[]>('/admin/contacts', { token }).then(setRows).catch(reason => setError(errorText(reason))); }, [token]);
+  async function done(id: string) {
+    try { const row = await api<Contact>('/admin/contacts/' + id, { token, method: 'PATCH', body: { status: 'DONE' } }); setRows(previous => previous.map(item => item.id === id ? row : item)); }
+    catch (reason) { setError(errorText(reason)); }
+  }
+  return <section className="stack"><h2>Tin nhắn từ trang Liên hệ</h2>{error && <p className="error" role="alert">{error}</p>}
+    {!rows.length && <p>Chưa có tin nhắn.</p>}
+    {rows.map(row => <article className="panel stack" key={row.id}><div className="line"><strong>{row.name}</strong><span className="badge">{row.status === 'NEW' ? 'Mới' : 'Đã xử lý'}</span></div>
+      <small>{localDate(row.createdAt)} · <a href={'mailto:' + row.email}>{row.email}</a></small><p style={{ whiteSpace: 'pre-wrap' }}>{row.message}</p>
+      {row.status === 'NEW' && <button className="button" onClick={() => done(row.id)}>Đánh dấu đã xử lý</button>}</article>)}
+  </section>;
+}
+

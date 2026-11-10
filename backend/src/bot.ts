@@ -28,7 +28,7 @@ const inputSchema = z.object({
 function carousel(items: Product[], psid: string) {
   return {
     attachment: { type: 'template', payload: { template_type: 'generic', elements: items.slice(0, 6).map(product => {
-      const url = messengerLink('/product/' + product.slug, psid);
+      const url = messengerLink('/san-pham/' + product.slug, psid);
       const image = Array.isArray(product.images) && typeof product.images[0] === 'string' ? product.images[0] : undefined;
       return {
         title: product.name.slice(0, 80),
@@ -237,7 +237,7 @@ export async function handleMessage(input: z.infer<typeof inputSchema>) {
       ' ' + variant.unit + ', hiện còn ' + variant.stock + '. Bạn muốn đặt bao nhiêu?',
       Array.from({ length: Math.min(5, variant.stock - variant.minQty + 1, 100 - variant.minQty) },
         (_, i) => String(i + variant.minQty)).concat(choices))], next);
-    const url = new URL(messengerLink('/product/' + product.slug, psid));
+    const url = new URL(messengerLink('/san-pham/' + product.slug, psid));
     url.searchParams.set('variant', variant.id);
     url.searchParams.set('quantity', String(quantity));
     return reply([text(product.name + ' · ' + variant.color + ' / ' + variant.size + ' / ' + variant.gender +

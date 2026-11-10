@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { api, errorText, LivePolicy, money, Product, query } from './api';
-import { useSeo } from './seo';
+import { fitDescription, fitTitle, useSeo } from './seo';
 import { cartFromSession, saveCart } from './cart';
 import { ProductImage, PhotoCredit } from './photos';
+import { Breadcrumb } from './breadcrumb';
+import { useCategories, useCategoriesLoading } from './data';
+
+export function ProductCard({ product }: { product: Product }) {
+  const available = product.variants.filter(variant => variant.stock >= variant.minQty);
+  const stock = available.length ? available.some(variant => variant.stock > variant.minQty + 4) ? 'Còn hàng' : 'Sắp hết' : 'Hết hàng';
+  return <Link className="product-card" to={'/san-pham/' + product.slug}>
+    <div className="product-art tank"><ProductImage slug={product.slug} source={product.images[0]} thumbnail alt={product.name} /><span className={'badge stock-' + (stock === 'Còn hàng' ? 'in' : stock === 'Sắp hết' ? 'low' : 'out')}>{stock}</span></div>
+    <span className="price-tag">{money(product.price)}</span><p className="eyebrow">{product.category}</p><h3>{product.name}</h3>
+  </Link>;
+}
 
 export function Catalog() {
   const [rows, setRows] = useState<Product[]>([]);
-  const [search, setSearch] = useState('');
+  const urlSearch = new URLSearchParams(useLocation().search).get('q') || '';
+  const [search, setSearch] = useState(urlSearch);
+  useEffect(() => { setSearch(urlSearch); }, [urlSearch]);
+  const featured = useCategoriesLoading();
   const [category, setCategory] = useState('');
   const [priceRange, setPriceRange] = useState('');
   const [difficulty, setDifficulty] = useState('');
@@ -36,10 +50,16 @@ export function Catalog() {
         <p>Chọn cá hợp với bể của bạn. Xem thông số nuôi và tìm đủ cây, thức ăn, thiết bị để chăm bể mỗi ngày.</p>
         <a className="button" href="#san-pham">Khám phá sản phẩm <span aria-hidden>↘</span></a>
       </div>
-      <div className="hero-art tank"><img src="/catalog/photos/betta-halfmoon-1.webp" alt="Cá Betta halfmoon chụp trong bể" width={640} height={420} fetchPriority="high" />
+      <div className="hero-art tank"><img src="/catalog/photos/betta-halfmoon-1.webp" srcSet="/catalog/photos/betta-halfmoon-1-thumb.webp 480w, /catalog/photos/betta-halfmoon-1.webp 1200w" sizes="(max-width: 700px) 92vw, 640px" alt="Cá Betta halfmoon chụp trong bể" width={640} height={420} fetchPriority="high" />
         <span className="bubbles" aria-hidden="true"><i /><i /><i /><i /><i /><i /></span>
-        <Link className="tank-tag" to="/product/betta-halfmoon">Betta Halfmoon<small>Xem cá →</small></Link></div>
+        <Link className="tank-tag" to="/san-pham/betta-halfmoon">Betta Halfmoon<small>Xem cá →</small></Link></div>
     </section>
+    {(featured === null || featured.length >= 4) && <section className="shell section" aria-labelledby="featured-title"><div className="section-title"><div><p className="eyebrow">DANH MỤC NỔI BẬT</p><h2 id="featured-title">Chọn theo nhóm</h2></div></div>
+      <div className="category-grid">{featured === null ? Array.from({ length: 5 }, (_, index) => <div key={index} className="category-card skeleton" aria-hidden="true" />) : featured.map(item => {
+        const cover = rows.find(row => row.category === item.name);
+        return <Link key={item.slug} className="category-card" to={'/danh-muc/' + item.slug}>
+          <div className="product-art tank">{cover && <ProductImage slug={cover.slug} source={cover.images[0]} thumbnail alt={item.name + ' – ' + cover.name} />}</div>
+          <h3>{item.name}</h3><p>{item.count} sản phẩm</p><span className="text-button">Khám phá →</span></Link>; })}</div></section>}
     <section className="shell section" id="san-pham">
       <div className="section-title"><div><p className="eyebrow">KHÁM PHÁ LONG FISH</p><h2>Cá cảnh và thủy sinh</h2></div>
         <label className="search"><span className="sr-only">Tìm sản phẩm</span><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm sản phẩm…" /></label>
@@ -52,14 +72,7 @@ export function Catalog() {
         <label>Cỡ cá trưởng thành<select value={maxCm} onChange={e => setMaxCm(e.target.value)}><option value="">Tất cả</option>{[5,10,20,30].map(cm => <option key={cm} value={cm}>Đến {cm} cm</option>)}</select></label>
       </div>
       {(status || !filtered.length) && <p role="status">{status || 'Không tìm thấy sản phẩm phù hợp.'}</p>}
-      <div className="grid-products">{filtered.map(product => {
-        const available = product.variants.filter(variant => variant.stock >= variant.minQty);
-        const stock = available.length ? available.some(variant => variant.stock > variant.minQty + 4) ? 'Còn hàng' : 'Sắp hết' : 'Hết hàng';
-        return <Link className="product-card" key={product.id} to={'/product/' + product.slug}>
-          <div className="product-art tank"><ProductImage slug={product.slug} source={product.images[0]} thumbnail alt={product.name} /><span className={'badge stock-' + (stock === 'Còn hàng' ? 'in' : stock === 'Sắp hết' ? 'low' : 'out')}>{stock}</span></div>
-          <span className="price-tag">{money(product.price)}</span><p className="eyebrow">{product.category}</p><h3>{product.name}</h3>
-        </Link>;
-      })}</div>
+      <div className="grid-products">{status === 'Đang tải sản phẩm…' && !rows.length ? Array.from({ length: 8 }, (_, index) => <div key={index} className="product-card skeleton" aria-hidden="true" />) : filtered.map(product => <ProductCard key={product.id} product={product} />)}</div>
     </section>
   </>;
 }
@@ -74,7 +87,10 @@ export function ProductPage() {
   const [photo, setPhoto] = useState(0);
   const [error, setError] = useState('');
   const [policy, setPolicy] = useState<LivePolicy>();
-  useSeo({ title: product ? product.name + ' | Long Fish' : 'Sản phẩm | Long Fish', description: product ? (product.name + ' giá từ ' + money(Math.min(...product.variants.map(row => row.priceOverride ?? product.price))) + '. ' + product.description).slice(0, 160) : undefined });
+  const lowPrice = product ? Math.min(...product.variants.map(row => row.priceOverride ?? product.price)) : 0;
+  const inStock = !!product?.variants.some(row => row.stock >= row.minQty);
+  useSeo(product ? { title: fitTitle(product.name + ' — Long Fish', [' | Giá Tốt', '']),
+    description: fitDescription(product.name + ' giá từ ' + money(lowPrice) + (inStock ? ' – còn hàng. ' : ' – tạm hết hàng. ') + product.description) } : undefined);
   useEffect(() => { api<LivePolicy>('/shipping/policy').then(setPolicy).catch(() => {}); }, []);
   useEffect(() => {
     const controller = new AbortController();
@@ -89,6 +105,16 @@ export function ProductPage() {
     return () => controller.abort();
   }, [slug, search]);
   const variant = product?.variants.find(v => v.id === variantId);
+  const allCategories = useCategories();
+  const group = allCategories.find(item => item.name === product?.category);
+  const [related, setRelated] = useState<Product[]>([]);
+  useEffect(() => {
+    if (!product) return;
+    let alive = true;
+    api<Product[]>('/products?category=' + encodeURIComponent(product.category))
+      .then(rows => { if (alive) setRelated(rows.filter(row => row.id !== product.id).slice(0, 4)); }).catch(() => {});
+    return () => { alive = false; };
+  }, [product?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!product) return <div className="shell section" role={error ? 'alert' : 'status'}>{error || 'Đang tải sản phẩm…'}</div>;
   const colors = [...new Set(product.variants.map(v => v.color))];
   const byColor = product.variants.filter(v => v.color === variant?.color);
@@ -105,11 +131,11 @@ export function ProductPage() {
     navigate('/checkout');
   };
   return <section className="shell section">
-    <Link to="/" className="back">← Cửa hàng</Link>
+    <Breadcrumb trail={[{ name: 'Trang chủ', to: '/' }, ...(group ? [{ name: group.name, to: '/danh-muc/' + group.slug }] : []), { name: product.name }]} />
     <div className="detail">
       <div><div className="product-art tank"><ProductImage slug={product.slug} source={product.images[photo]} alt={product.name} loading="eager" /></div>
         <PhotoCredit slug={product.slug} file={product.images[photo]} />
-        {product.isLiveFish && <small className="photo-credit">Ảnh minh họa dòng cá; màu sắc và hoa văn từng con có thể khác nhau.</small>}
+        {product.isLiveFish && <small className="photo-note">Ảnh minh họa dòng cá; màu sắc và hoa văn từng con có thể khác nhau.</small>}
         {product.images.length > 1 && <div className="filters">{product.images.map((src, i) => <button key={i} aria-pressed={i === photo} onClick={() => setPhoto(i)}>Ảnh {i + 1}</button>)}</div>}</div>
       <div className="detail-copy"><p className="eyebrow">{product.category}</p><h1>{product.name}</h1>
         <p className="price">{money(variant?.priceOverride ?? product.price)}</p><p>{product.description}</p>
@@ -121,7 +147,7 @@ export function ProductPage() {
           onChange={e => setQuantity(Math.max(variant.minQty, Math.min(Math.trunc(Number(e.target.value)), variant.stock, 99)))} /></label>
           <button className="button" disabled={variant.stock < variant.minQty} onClick={buy}>Mua ngay →</button></div>}
         {(!variant || variant.stock < variant.minQty) && !!product.alternatives?.length && <aside className="panel stack alternatives" aria-label="Mẫu cùng nhóm còn hàng"><h2>Mẫu cùng nhóm còn hàng</h2>
-          <div className="alt-grid">{product.alternatives.map(item => <Link key={item.id} className="product-card" to={'/product/' + item.slug}><strong>{item.name}</strong><span>{money(item.price)}</span></Link>)}</div></aside>}
+          <div className="alt-grid">{product.alternatives.map(item => <Link key={item.id} className="product-card" to={'/san-pham/' + item.slug}><strong>{item.name}</strong><span>{money(item.price)}</span></Link>)}</div></aside>}
         {product.isLiveFish && policy && <aside className="policy"><strong>Cam kết cá sống khi nhận</strong><p>{policy.doaPolicy}</p></aside>}
         {product.isLiveFish && product.careInfo && <div className="panel stack"><h2>Thông số nuôi tham khảo</h2><dl className="care-grid">
           {Object.entries({ 'Tên khoa học': product.careInfo.scientificName, 'Cỡ trưởng thành': product.careInfo.adultCm + ' cm',
@@ -131,6 +157,8 @@ export function ProductPage() {
           {product.careInfo.source && /^https:\/\//.test(product.careInfo.source) && <a className="text-button" href={product.careInfo.source}>Nguồn tham khảo</a>}</div>}
       </div>
     </div>
+    {related.length > 0 && <section className="related" aria-labelledby="related-title"><h2 id="related-title">Sản phẩm liên quan</h2>
+      <div className="grid-products">{related.map(row => <ProductCard key={row.id} product={row} />)}</div></section>}
   </section>;
 }
 

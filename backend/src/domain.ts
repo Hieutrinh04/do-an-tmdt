@@ -91,6 +91,9 @@ export function qrUrl(code: string, amount: number) {
       new URLSearchParams({ amount: String(amount), addInfo: code, ...(accountName ? { accountName } : {}) });
 }
 
+// Thông tin phí vận chuyển cho trang Chính sách vận chuyển (cùng nguồn với phần tính tiền, không nhập tay hai nơi).
+export const shippingInfo = () => ({ fees, defaultFee, freeThreshold, packingFee: livePackingFee, liveProvinces, liveEverywhere });
+
 export const statusLabels: Record<OrderStatus, string> = {
   PENDING: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao',
   DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy',
