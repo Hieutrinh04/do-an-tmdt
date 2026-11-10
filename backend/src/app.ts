@@ -152,8 +152,8 @@ export function createApp() {
     else {
       const orders = await db.order.findMany({ where: { createdAt: { gte: dayStart(from), lt: addDays(dayStart(to), 1) } }, orderBy: { createdAt: 'asc' }, take: 5001 });
       if (orders.length > 5000) throw new HttpError(422, 'Tối đa 5000 đơn mỗi lần xuất. Hãy thu hẹp khoảng ngày.');
-      rows = [['Mã đơn', 'Khách hàng', 'SĐT', 'Địa chỉ', 'Trạng thái', 'Phương thức', 'Thanh toán', 'Tổng VND', 'Giờ nhận mong muốn', 'Ghi chú nội bộ'],
-        ...orders.map(order => [order.code, order.customerName, order.phone, order.address, order.status, order.paymentMethod, order.paymentStatus, order.total, order.preferredDelivery, order.internalNote])];
+      rows = [['Mã đơn', 'Khách hàng', 'SĐT', 'Email', 'Địa chỉ', 'Trạng thái', 'Phương thức', 'Thanh toán', 'Tổng VND', 'Giờ nhận mong muốn', 'Ghi chú nội bộ'],
+        ...orders.map(order => [order.code, order.customerName, order.phone, order.email, order.address, order.status, order.paymentMethod, order.paymentStatus, order.total, order.preferredDelivery, order.internalNote])];
     }
     res.type('text/csv; charset=utf-8').attachment(`long-fish-${kind}-${from}-${to}.csv`).send(csvDocument(rows));
   });

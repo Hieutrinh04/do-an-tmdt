@@ -122,7 +122,7 @@ function OrdersAdmin({ token }: AdminProps) {
       <small>Trang {page} · {total} đơn</small><button className="outline" disabled={page * 30 >= total} onClick={() => setPage(page + 1)}>Trang sau</button></div>
     {selected && <article className="panel stack" aria-label="Chi tiết đơn">
       <div className="line"><h3>{selected.code}</h3><button className="outline" disabled={busy} onClick={() => setSelected(undefined)}>Đóng</button></div>
-      <p>{selected.customerName} · {selected.phone}<br />{selected.address}</p>
+      <p>{selected.customerName} · {selected.phone}{selected.email && <> · <a href={'mailto:' + selected.email}>{selected.email}</a></>}<br />{selected.address}</p>
       {selected.hasLiveFish && <p><span className="badge order-live">Cá sống · Ưu tiên đóng gói</span></p>}
       {selected.preferredDelivery && <p>Giờ nhận mong muốn · {localDate(selected.preferredDelivery)}</p>}
       {selected.note && <p>Ghi chú nhận hàng · {selected.note}</p>}

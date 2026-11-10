@@ -30,7 +30,7 @@ Backend lưu `ConversationState.lastInboundAt` khi nhận tin khách mới. Đơ
 
 Các trang tài liệu Meta chính thức trả HTTP 429 trong lần kiểm tra này. Vì vậy cơ chế Utility Template và tag gửi ngoài cửa sổ chưa được xác minh hoặc bật trong code. Chủ dự án cần mở tài liệu, xác nhận quyền và mẫu thông báo được duyệt cho Page, rồi bổ sung tích hợp tương ứng trước khi tự động gửi ngoài cửa sổ. Không nhập tag suy đoán vào payload. Các đường dẫn cần kiểm tra gồm [Send API](https://developers.facebook.com/docs/messenger-platform/send-messages/), [Utility messages](https://developers.facebook.com/docs/messenger-platform/send-messages/utility-messages/) và [changelog Messenger](https://developers.facebook.com/docs/messenger-platform/changelog/).
 
-Phương án vận hành hiện có là nhân viên mở đơn theo mã trong yêu cầu hỗ trợ, gọi hoặc gửi SMS tới số khách đã cung cấp. Nếu đã thu email với sự đồng ý của khách qua kênh hỗ trợ, gửi email thủ công. Form đặt hàng hiện chưa thu email khách và chưa tích hợp cổng SMS. Không dùng HUMAN_AGENT cho bot gửi tự động.
+Phương án vận hành hiện có là nhân viên mở đơn theo mã trong yêu cầu hỗ trợ, gọi hoặc gửi SMS tới số khách đã cung cấp. Nếu đã thu email với sự đồng ý của khách qua kênh hỗ trợ, gửi email thủ công. Form đặt hàng có ô email không bắt buộc; khách nhập email sẽ tự nhận email xác nhận đơn và thông báo trạng thái qua SMTP (workflow 2 và 3), kể cả khi cửa sổ Messenger đã đóng. Chưa tích hợp cổng SMS. Không dùng HUMAN_AGENT cho bot gửi tự động.
 
 ## Google Sheets
 

@@ -54,7 +54,7 @@ export async function createOrder(input: z.infer<typeof orderInput>) {
     const code = 'DH' + day + '-' + String(sequence.value).padStart(4, '0');
     const order = await tx.order.create({
       data: {
-        code, customerName: input.customerName, phone: input.phone, psid: trustedPsid(input.psid, input.context),
+        code, customerName: input.customerName, phone: input.phone, email: input.email || '', psid: trustedPsid(input.psid, input.context),
         address: [input.address, input.district, input.province].join(', '),
         note: input.note, paymentMethod: input.paymentMethod, subtotal, shippingFee, packingFee, total, hasLiveFish, doaAccepted: input.doaAccepted,
         preferredDelivery: input.preferredDelivery,

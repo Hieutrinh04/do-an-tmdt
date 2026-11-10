@@ -6,7 +6,7 @@ export type Status = 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCE
 export type Payment = 'COD' | 'BANK_QR';
 export type Item = { id: string; productName: string; color: string; size: string; gender: string; unit: string; quantity: number; unitPrice: number };
 export type Tracked = { code: string; total: number; status: Status; paymentStatus: 'UNPAID' | 'PAID'; createdAt: string; history: { id?:string; toStatus: Status; changedAt: string; action?:string; detail?:string }[] };
-export type Order = Tracked & { id: string; customerName: string; phone: string; address: string; note: string; items: Item[]; paymentMethod: Payment; subtotal: number; shippingFee: number; packingFee: number; hasLiveFish: boolean; preferredDelivery: string; internalNote: string };
+export type Order = Tracked & { id: string; customerName: string; phone: string; email: string; address: string; note: string; items: Item[]; paymentMethod: Payment; subtotal: number; shippingFee: number; packingFee: number; hasLiveFish: boolean; preferredDelivery: string; internalNote: string };
 export type Confirmation = Pick<Order, 'code' | 'total' | 'items' | 'paymentMethod' | 'subtotal' | 'shippingFee' | 'packingFee' | 'hasLiveFish'> & { qrUrl?: string; mock: boolean };
 export const labels: Record<Status, string> = { PENDING: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', SHIPPING: 'Đang giao', DELIVERED: 'Đã giao', CANCELLED: 'Đã hủy' };
 export const money = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);

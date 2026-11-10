@@ -59,7 +59,10 @@ export const orderLines = z.array(z.object({
 
 export const orderInput = z.object({
   customerName: required(100), phone, province: required(100), district: required(100),
-  address: required(200), psid: psid.optional(), context: z.string().regex(/^[a-f0-9]{64}$/).optional(), note: clean(300).optional(),
+  address: required(200),
+  // Email không bắt buộc: chỉ dùng để gửi xác nhận đơn và thông báo trạng thái.
+  email: z.union([z.literal(''), z.string().trim().max(254).email('Email không hợp lệ.')]).optional(),
+  psid: psid.optional(), context: z.string().regex(/^[a-f0-9]{64}$/).optional(), note: clean(300).optional(),
   paymentMethod: z.enum(['COD', 'BANK_QR']),
   preferredDelivery: z.string().datetime({ offset: true }).optional(),
   doaAccepted: z.boolean().default(false),

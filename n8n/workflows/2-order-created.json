@@ -86,7 +86,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const order = $input.first().json;\nconst event = $('Webhook · Đơn mới').first().json.body;\nconst status = event.status;\nconst labels = {PENDING:'Chờ xác nhận',CONFIRMED:'Đã xác nhận',SHIPPING:'Đang giao',DELIVERED:'Đã giao',CANCELLED:'Đã hủy'};\nif (!labels[status]) throw new Error('Trạng thái sự kiện không hợp lệ.');\nconst esc = value => String(value ?? '').replace(/[&<>\"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[char]));\nconst money = value => new Intl.NumberFormat('vi-VN', {style:'currency',currency:'VND'}).format(value);\nconst row = {code:order.code,createdAt:order.createdAt,customer:order.customerName,phone:order.phone,address:order.address,\n  products:order.items.map(item => item.productName + ' · ' + item.color + ' / ' + item.size + ' / ' + item.gender + ' × ' + item.quantity + ' ' + item.unit).join('; '),\n  quantity:order.items.reduce((sum,item) => sum+item.quantity,0),subtotal:order.subtotal,shippingFee:order.shippingFee,\n  gender:order.items.map(item => item.gender).join('; '),packingFee:order.packingFee,\n  hasLiveFish:order.hasLiveFish ? 'Có' : 'Không',preferredDelivery:order.preferredDelivery,deliveryNote:order.note,\n  total:order.total,paymentMethod:order.paymentMethod,paymentStatus:order.paymentStatus,status};\nconst site = ($env.SITE_URL || 'http://localhost:8080').replace(/\\/+$/, '');\nconst url = site + '/track?code=' + encodeURIComponent(order.code);\nconst method = order.paymentMethod === 'BANK_QR' ?\n  'Chuyển khoản đúng ' + money(order.total) + ', nội dung ' + order.code + (order.qrUrl ? '\\nQR: ' + order.qrUrl : '') :\n  'Thanh toán khi nhận hàng.';\nconst policy = order.hasLiveFish ? '\\n' + order.doaPolicy : '';\nconst newText = 'Long Fish đã nhận đơn ' + order.code + '.\\n' + row.products + '\\nTổng: ' + money(order.total) + '.\\n' + method;\nconst statusText = 'Long Fish · Đơn ' + order.code + ' · ' + labels[status] + '.';\nconst htmlRows = order.items.map(item => '<tr><td>' + esc(item.productName) + '</td><td>' + esc(item.color) + ' / ' +\n  esc(item.size) + ' / ' + esc(item.gender) + '</td><td>' + item.quantity + ' ' + esc(item.unit) + '</td><td>' + esc(money(item.unitPrice * item.quantity)) + '</td></tr>').join('');\nconst html = '<h2>Long Fish · Đơn mới ' + esc(order.code) + '</h2><p>' + esc(order.customerName) + ' · ' + esc(order.phone) +\n  '<br>' + esc(order.address) + '</p><table border=\"1\" cellpadding=\"8\"><tr><th>Sản phẩm</th><th>Phân loại</th><th>SL</th><th>Tiền hàng</th></tr>' +\n  htmlRows + '</table><p>Tiền hàng ' + money(order.subtotal) + ' · Giao hàng ' + money(order.shippingFee) + ' · Đóng gói ' + money(order.packingFee) +\n  ' · Tổng ' + money(order.total) + '</p><p>' + esc(order.paymentMethod) + '</p><p>Cá sống: ' + row.hasLiveFish + '<br>Nhận mong muốn: ' +\n  esc(order.preferredDelivery ? new Date(order.preferredDelivery).toLocaleString('vi-VN', {timeZone:'Asia/Ho_Chi_Minh'}) : '') +\n  '<br>Ghi chú: ' + esc(order.note) + '</p>';\nreturn [{ json: {row, subject:'[Long Fish] Đơn mới ' + order.code, html, psid:order.psid,\n  message:{text:(true ? newText.slice(0,1300) + policy : statusText + (status === 'SHIPPING' ? policy : '')) + '\\nTra cứu: ' + url.toString()} } }];"
+        "jsCode": "const order = $input.first().json;\nconst event = $('Webhook · Đơn mới').first().json.body;\nconst status = event.status;\nconst labels = {PENDING:'Chờ xác nhận',CONFIRMED:'Đã xác nhận',SHIPPING:'Đang giao',DELIVERED:'Đã giao',CANCELLED:'Đã hủy'};\nif (!labels[status]) throw new Error('Trạng thái sự kiện không hợp lệ.');\nconst esc = value => String(value ?? '').replace(/[&<>\"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[char]));\nconst money = value => new Intl.NumberFormat('vi-VN', {style:'currency',currency:'VND'}).format(value);\nconst row = {code:order.code,createdAt:order.createdAt,customer:order.customerName,phone:order.phone,address:order.address,\n  products:order.items.map(item => item.productName + ' · ' + item.color + ' / ' + item.size + ' / ' + item.gender + ' × ' + item.quantity + ' ' + item.unit).join('; '),\n  quantity:order.items.reduce((sum,item) => sum+item.quantity,0),subtotal:order.subtotal,shippingFee:order.shippingFee,\n  gender:order.items.map(item => item.gender).join('; '),packingFee:order.packingFee,\n  hasLiveFish:order.hasLiveFish ? 'Có' : 'Không',preferredDelivery:order.preferredDelivery,deliveryNote:order.note,\n  total:order.total,paymentMethod:order.paymentMethod,paymentStatus:order.paymentStatus,status};\nconst site = ($env.SITE_URL || 'http://localhost:8080').replace(/\\/+$/, '');\nconst url = site + '/track?code=' + encodeURIComponent(order.code);\nconst method = order.paymentMethod === 'BANK_QR' ?\n  'Chuyển khoản đúng ' + money(order.total) + ', nội dung ' + order.code + (order.qrUrl ? '\\nQR: ' + order.qrUrl : '') :\n  'Thanh toán khi nhận hàng.';\nconst policy = order.hasLiveFish ? '\\n' + order.doaPolicy : '';\nconst newText = 'Long Fish đã nhận đơn ' + order.code + '.\\n' + row.products + '\\nTổng: ' + money(order.total) + '.\\n' + method;\nconst statusText = 'Long Fish · Đơn ' + order.code + ' · ' + labels[status] + '.';\nconst htmlRows = order.items.map(item => '<tr><td>' + esc(item.productName) + '</td><td>' + esc(item.color) + ' / ' +\n  esc(item.size) + ' / ' + esc(item.gender) + '</td><td>' + item.quantity + ' ' + esc(item.unit) + '</td><td>' + esc(money(item.unitPrice * item.quantity)) + '</td></tr>').join('');\nconst html = '<h2>Long Fish · Đơn mới ' + esc(order.code) + '</h2><p>' + esc(order.customerName) + ' · ' + esc(order.phone) +\n  '<br>' + esc(order.address) + '</p><table border=\"1\" cellpadding=\"8\"><tr><th>Sản phẩm</th><th>Phân loại</th><th>SL</th><th>Tiền hàng</th></tr>' +\n  htmlRows + '</table><p>Tiền hàng ' + money(order.subtotal) + ' · Giao hàng ' + money(order.shippingFee) + ' · Đóng gói ' + money(order.packingFee) +\n  ' · Tổng ' + money(order.total) + '</p><p>' + esc(order.paymentMethod) + '</p><p>Cá sống: ' + row.hasLiveFish + '<br>Nhận mong muốn: ' +\n  esc(order.preferredDelivery ? new Date(order.preferredDelivery).toLocaleString('vi-VN', {timeZone:'Asia/Ho_Chi_Minh'}) : '') +\n  '<br>Ghi chú: ' + esc(order.note) + '</p>';\n// --- Email gửi khách (thêm bởi scripts/n8n-customer-email.cjs) ---\nconst customerLabels = {CONFIRMED:'Đơn đã được xác nhận. Long Fish đang chuẩn bị hàng cho bạn.',\n  SHIPPING:'Đơn đang được giao tới bạn.',DELIVERED:'Đơn đã được giao. Cảm ơn bạn đã mua hàng tại Long Fish.',\n  CANCELLED:'Đơn đã được hủy. Nếu bạn không yêu cầu hủy, hãy trả lời email này hoặc nhắn Fanpage Long Fish.',\n  PENDING:'Long Fish đã nhận đơn và sẽ xác nhận sớm.'};\nconst wantsEmail = !!order.email && !(event.kind === 'payment' && event.notify === false);\nconst customerEmail = wantsEmail ? String(order.email) : '';\nconst shell = (title, body) => '<div style=\"font-family:Arial,sans-serif;max-width:560px;color:#0e2a2b\">' +\n  '<p style=\"font-size:13px;color:#1f5c46;font-weight:bold;letter-spacing:.08em\">LONG FISH · CÁ CẢNH VÀ THỦY SINH</p>' +\n  '<h2 style=\"margin:0 0 12px\">' + title + '</h2>' + body +\n  '<p><a href=\"' + esc(url) + '\" style=\"display:inline-block;background:#1f5c46;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none\">Tra cứu đơn ' + esc(order.code) + '</a></p>' +\n  '<p style=\"font-size:12px;color:#4a6661\">Bạn nhận email này vì đã nhập địa chỉ email khi đặt hàng tại Long Fish. Email chỉ dùng cho thông báo đơn hàng.</p></div>';\nconst itemsTable = '<table cellpadding=\"6\" style=\"border-collapse:collapse;width:100%;font-size:14px\">' +\n  order.items.map(item => '<tr style=\"border-bottom:1px solid #cfe2d8\"><td>' + esc(item.productName) + '<br><small>' + esc(item.color) + ' / ' +\n    esc(item.size) + ' / ' + esc(item.gender) + '</small></td><td>' + item.quantity + ' ' + esc(item.unit) + '</td><td style=\"text-align:right\">' +\n    esc(money(item.unitPrice * item.quantity)) + '</td></tr>').join('') + '</table>';\nconst totals = '<p>Tiền hàng ' + esc(money(order.subtotal)) + '<br>Giao hàng ' + esc(money(order.shippingFee)) +\n  (order.packingFee ? '<br>Đóng gói cá sống ' + esc(money(order.packingFee)) : '') + '<br><strong>Tổng ' + esc(money(order.total)) + '</strong></p>';\nconst payHtml = order.paymentMethod === 'BANK_QR'\n  ? '<p><strong>Chuyển khoản:</strong> đúng ' + esc(money(order.total)) + ', nội dung <strong>' + esc(order.code) + '</strong>.</p>' +\n    (order.qrUrl ? '<p><img src=\"' + esc(order.qrUrl) + '\" alt=\"Mã VietQR đơn ' + esc(order.code) + '\" width=\"220\"></p>' : '')\n  : '<p><strong>Thanh toán:</strong> tiền mặt khi nhận hàng.</p>';\nconst policyHtml = order.hasLiveFish && order.doaPolicy ? '<p style=\"background:#eaf4ef;padding:10px;border-left:4px solid #f0642b\">' + esc(order.doaPolicy) + '</p>' : '';\nlet customerSubject = '';\nlet customerHtml = '';\nif (event.kind === 'created') {\n  customerSubject = '[Long Fish] Xác nhận đơn ' + order.code;\n  customerHtml = shell('Cảm ơn ' + esc(order.customerName) + ', Long Fish đã nhận đơn ' + esc(order.code),\n    '<p>Giao tới: ' + esc(order.address) + '</p>' + itemsTable + totals + payHtml + policyHtml);\n} else if (event.kind === 'payment') {\n  customerSubject = '[Long Fish] Đã nhận thanh toán đơn ' + order.code;\n  customerHtml = shell('Đã nhận thanh toán ' + esc(money(order.total)), '<p>Long Fish đã nhận tiền chuyển khoản cho đơn ' + esc(order.code) + '.</p>');\n} else {\n  customerSubject = '[Long Fish] Đơn ' + order.code + ': ' + labels[status];\n  customerHtml = shell('Đơn ' + esc(order.code) + ': ' + esc(labels[status]), '<p>' + esc(customerLabels[status] || '') + '</p>' + (status === 'SHIPPING' ? policyHtml : ''));\n}\nreturn [{ json: {row, customerEmail, customerSubject, customerHtml, subject:'[Long Fish] Đơn mới ' + order.code, html, psid:order.psid,\n  message:{text:(true ? newText.slice(0,1300) + policy : statusText + (status === 'SHIPPING' ? policy : '')) + '\\nTra cứu: ' + url.toString()} } }];"
       },
       "id": "00000000-0000-4000-8000-000000000004",
       "name": "Chuẩn bị Sheets và thông báo",
@@ -543,6 +543,130 @@
       ],
       "notes": "Dùng credential SMTP và gửi nội dung HTML đã escape.",
       "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !!$('Chuẩn bị Sheets và thông báo').first().json.customerEmail }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000e01",
+      "name": "Có email khách?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1000,
+        200
+      ],
+      "notes": "Chỉ gửi khi khách để lại email.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $env.MOCK_INTEGRATIONS !== 'false' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000e02",
+      "name": "Email khách · mock?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        200
+      ],
+      "notes": "Chế độ mock chỉ ghi log, không gửi mail thật.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:3001/api/internal/mock/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.INTERNAL_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({subject:$('Chuẩn bị Sheets và thông báo').first().json.customerSubject,html:$('Chuẩn bị Sheets và thông báo').first().json.customerHtml,to:$('Chuẩn bị Sheets và thông báo').first().json.customerEmail}) }}",
+        "options": {
+          "timeout": 18000
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000e03",
+      "name": "Email khách · Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        200
+      ],
+      "notes": "In email gửi khách trong chế độ mock.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.MAIL_FROM }}",
+        "toEmail": "={{ $('Chuẩn bị Sheets và thông báo').first().json.customerEmail }}",
+        "subject": "={{ $('Chuẩn bị Sheets và thông báo').first().json.customerSubject }}",
+        "emailFormat": "html",
+        "html": "={{ $('Chuẩn bị Sheets và thông báo').first().json.customerHtml }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000e04",
+      "name": "SMTP · Gửi khách",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1400,
+        400
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "Gửi email cho khách. Lỗi gửi (ví dụ địa chỉ sai) không chặn các bước sau.",
+      "notesInFlow": true
     }
   ],
   "connections": {
@@ -630,7 +754,7 @@
       "main": [
         [
           {
-            "node": "Có PSID?",
+            "node": "Có email khách?",
             "type": "main",
             "index": 0
           }
@@ -652,7 +776,7 @@
       "main": [
         [
           {
-            "node": "Có PSID?",
+            "node": "Có email khách?",
             "type": "main",
             "index": 0
           }
@@ -682,6 +806,64 @@
         [
           {
             "node": "Hoàn tất",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Có email khách?": {
+      "main": [
+        [
+          {
+            "node": "Email khách · mock?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Có PSID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email khách · mock?": {
+      "main": [
+        [
+          {
+            "node": "Email khách · Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SMTP · Gửi khách",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email khách · Log": {
+      "main": [
+        [
+          {
+            "node": "Có PSID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMTP · Gửi khách": {
+      "main": [
+        [
+          {
+            "node": "Có PSID?",
             "type": "main",
             "index": 0
           }

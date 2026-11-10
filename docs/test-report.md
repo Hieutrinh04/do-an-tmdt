@@ -95,3 +95,10 @@ RAM ghi nhận trước: backend 50,58 MiB, frontend 8,734 MiB, n8n 233,1 MiB tr
 - **Trang sản phẩm hết hàng gợi ý mẫu cùng nhóm còn hàng:** `GET /api/products/:slug` trả thêm `alternatives` (tối đa 4 sản phẩm cùng danh mục còn hàng) khi không còn phân loại nào đủ tồn kho và tối thiểu. Trang sản phẩm hiển thị khối "Mẫu cùng nhóm còn hàng" có liên kết. Có kịch bản Playwright mới cho luồng này.
 - Kiểm tra lại: lint PASS; Playwright trên stack làm mới 21 passed, 1 skipped (mục skip là khóa đăng nhập, chỉ chạy desktop).
 - Đã rà soát: thông báo đơn mới, âm báo, ghi chú nội bộ, lịch sử, lọc theo ngày giao, cảnh báo tồn thấp và gợi ý thay thế trong bot đã có trước đó.
+
+## Email cho khách (10/11/2026)
+
+- Form đặt hàng có ô **Email (không bắt buộc)**; backend kiểm tra định dạng, lưu cột `Order.email` (migration SQLite và PostgreSQL `20261110000000_customer_email`), không trả email ở API tra cứu công khai. Admin thấy email trong chi tiết đơn và CSV.
+- Workflow 2 và 3 có nhánh **Có email khách?** → mock ghi log / thật gửi SMTP: xác nhận đơn (sản phẩm, tổng, hướng dẫn VietQR, chính sách cá sống), đổi trạng thái, nhận thanh toán (bỏ qua khi admin tự đánh dấu). Lỗi gửi cho khách không chặn Messenger. Script vá idempotent: `scripts/n8n-customer-email.cjs`.
+- Kiểm tra: backend 123/123; Playwright 23 passed, 1 skipped trên stack cách ly làm mới (dùng `.env.example`, không có khóa thật), gồm kịch bản đặt hàng có email và xác nhận n8n gọi bước gửi email cho khách.
+- Hệ thống chính: đã sao lưu, chạy migration (48 đơn giữ nguyên), vá workflow đang chạy và gắn credential Gmail; `check:integrations` OK cả 6 mục. Chưa gửi email thật cho khách nào.

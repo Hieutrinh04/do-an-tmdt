@@ -309,3 +309,20 @@ test('top bán chạy tính cả phụ kiện, không chỉ cá sống', async (
   const stats = await api.get('/api/admin/stats/overview').set('Authorization', 'Bearer ' + token).query({ from: day, to: day }).expect(200);
   expect(stats.body.top).toContainEqual({ id: row.productId, name: 'Bộ lọc thử', quantity: 2, revenue: 240000 });
 });
+
+test('email khách không bắt buộc, được kiểm tra định dạng và không lộ khi tra cứu', async () => {
+  await db.productVariant.update({ where: { id: variant }, data: { stock: 20 } });
+  const withEmail = await api.post('/api/orders').send({ ...request(), email: '  lan.nguyen@example.com ' }).expect(201);
+  expect((await db.order.findUnique({ where: { code: withEmail.body.code } }))?.email).toBe('lan.nguyen@example.com');
+  const blank = await api.post('/api/orders').send({ ...request(), email: '' }).expect(201);
+  expect((await db.order.findUnique({ where: { code: blank.body.code } }))?.email).toBe('');
+  const none = await post().expect(201);
+  expect((await db.order.findUnique({ where: { code: none.body.code } }))?.email).toBe('');
+  for (const email of ['khong-phai-email', 'a@', 'x'.repeat(250) + '@example.com']) {
+    const response = await api.post('/api/orders').send({ ...request(), email });
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(response.status).toBeLessThan(500);
+  }
+  const tracked = await api.get('/api/orders/track').query({ code: withEmail.body.code, phone: '0901234567' }).expect(200);
+  expect(tracked.body).not.toHaveProperty('email');
+});

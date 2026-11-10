@@ -122,6 +122,32 @@ test('hết hàng hiển thị mẫu cùng nhóm còn hàng', async ({ page, req
   await expect(page.getByRole('heading', { name: 'TEST conhang ' + run })).toBeVisible();
 });
 
+test('khách nhập email khi đặt hàng thì n8n gửi email xác nhận (mock)', async ({ page, request }) => {
+  const token = await adminToken(request);
+  const { slug } = await createProduct(request, token, 'email', 5, false);
+  await page.goto('/product/' + slug);
+  await page.getByRole('button', { name: /Mua ngay/ }).click();
+  await page.getByLabel('Họ và tên').fill('Khách email Playwright');
+  await page.getByLabel('Số điện thoại').fill('0900000015');
+  const email = page.getByLabel('Email (không bắt buộc)');
+  await expect(email).toHaveAttribute('type', 'email');
+  const address = 'e2e-' + run + '@example.com';
+  await email.fill(address);
+  await page.getByLabel('Tỉnh / thành').fill('Hồ Chí Minh');
+  await page.getByLabel('Quận / huyện').fill('Quận thử');
+  await page.getByLabel('Địa chỉ cụ thể').fill('TEST email');
+  const order = page.waitForResponse(response => response.url().endsWith('/api/orders') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Đặt hàng →' }).click();
+  expect((await order).status()).toBe(201);
+  const { code } = await (await order).json();
+  await expect(page.getByRole('heading', { name: 'Cảm ơn bạn!' })).toBeVisible();
+  // Outbox gửi sự kiện sang n8n; n8n gọi endpoint mock và backend ghi log người nhận đã che bớt.
+  const masked = address.slice(0, 2) + '***@example.com';
+  const logs = () => execFileSync('docker', ['compose', '-p', process.env.E2E_COMPOSE_PROJECT!, 'logs', 'backend', '--since', '5m'], { encoding: 'utf8' });
+  await expect.poll(() => logs().split(/\r?\n/).some(line => line.includes('→ ' + masked) && line.includes('Xác nhận đơn ' + code)),
+    { timeout: 45_000, intervals: [1_000, 2_000, 3_000] }).toBe(true);
+});
+
 test('phụ kiện được giao ngoài vùng cá sống, cá sống thì bị chặn', async ({ request }) => {
   const token = await adminToken(request);
   const accessory = await createProduct(request, token, 'phukien', 5, false);

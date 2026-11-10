@@ -85,6 +85,8 @@ export function Checkout() {
         <div className="panel stack"><h2>Thông tin nhận hàng</h2>
           <label>Họ và tên<input name="customerName" autoComplete="name" required maxLength={100} /></label>
           <label>Số điện thoại<input name="phone" type="tel" autoComplete="tel" required maxLength={25} /></label>
+          <div className="stack-tight"><label>Email (không bắt buộc)<input name="email" type="email" autoComplete="email" maxLength={254} placeholder="ban@vidu.com" aria-describedby="email-hint" /></label>
+            <small id="email-hint">Chỉ dùng để gửi xác nhận đơn và thông báo giao hàng, không dùng quảng cáo.</small></div>
           <div className="two"><label>Tỉnh / thành<input name="province" autoComplete="address-level1" list="provinces" required maxLength={100} value={province} onChange={e => setProvince(e.target.value)} /></label>
             <label>Quận / huyện<input name="district" autoComplete="address-level2" required maxLength={100} /></label></div>
           <datalist id="provinces">{provinces.map(name => <option key={name} value={name} />)}</datalist>

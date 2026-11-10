@@ -57,8 +57,9 @@ integrations.post('/mock/sheets', async (req, res) => {
 });
 integrations.post('/mock/email', (req, res) => {
   if (!mock) throw new HttpError(404, 'Chế độ mock đã tắt.');
-  const { subject, html } = z.object({ subject: z.string().max(250), html: z.string().max(100000) }).parse(req.body);
-  console.info('[Email mock]', subject, 'HTML đã dựng, ' + html.length + ' ký tự');
+  const { subject, html, to } = z.object({ subject: z.string().max(250), html: z.string().max(100000), to: z.string().email().max(254).optional() }).parse(req.body);
+  const masked = to ? to.replace(/^(.{2}).*(@.*)$/, '$1***$2') : 'người bán';
+  console.info('[Email mock]', '→ ' + masked, subject, 'HTML đã dựng, ' + html.length + ' ký tự');
   res.json({ ok: true });
 });
 

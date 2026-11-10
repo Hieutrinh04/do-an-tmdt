@@ -71,6 +71,7 @@ model Order {
   code          String           @unique
   customerName  String
   phone         String
+  email         String           @default("")
   address       String
   psid          String?
   paymentMethod PaymentMethod

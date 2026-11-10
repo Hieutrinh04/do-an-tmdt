@@ -240,3 +240,5 @@ tbody tr:hover{background:#f5faf7}
   .packing-label small{display:block;font-size:8pt}
   .packing-label .live-warning{display:block;border:1px solid black;padding:2mm;font-size:10pt}
 }
+
+.stack-tight{display:grid;gap:.3rem}
