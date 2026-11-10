@@ -73,9 +73,10 @@ export const pageCsp = [
   "style-src 'self' https: 'unsafe-inline'", "connect-src 'self'", 'upgrade-insecure-requests',
 ].join(';');
 
-const sendHtml = (res: import('express').Response, html: string) =>
+const sendHtml = (res: import('express').Response, html: string) => {
   res.set('Content-Type', 'text/html; charset=utf-8').set('Cache-Control', 'public, max-age=60')
     .set('Content-Security-Policy', pageCsp).send(html);
+};
 
 seo.get('/home', async (req, res) => {
   const base = baseUrl(req);
