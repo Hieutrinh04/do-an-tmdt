@@ -40,7 +40,18 @@ function carousel(items: Product[], psid: string) {
   };
 }
 
-function candidatesFrom(items: Product[], phrase: string) {
+// Khách gõ có dấu thì phải khớp dấu: "lóc" (cá lóc) không được khớp "lọc" (lọc thác).
+// Chỉ từ chối khi MỌI lần xuất hiện của từ đó trong tin nhắn đều có dấu và tên sản phẩm không chứa đúng dạng đó.
+const foldD = (value: string) => value.replace(/đ/g, 'd');
+function accentMismatch(raw: string, stripped: string | undefined, productText: string) {
+  if (!stripped || stripped.includes(' ')) return false;
+  const name = foldD(productText.toLowerCase().normalize('NFC'));
+  const tokens = raw.toLowerCase().normalize('NFC').split(/[^\p{L}\p{N}]+/u).filter(Boolean).map(foldD)
+    .filter(token => normalize(token) === stripped);
+  return tokens.length > 0 && tokens.every(token => token !== stripped && !name.includes(token));
+}
+
+function candidatesFrom(items: Product[], phrase: string, raw = '') {
   const budget = phrase.match(/(?:duoi|toi da|tam|khoang|gia|ngan sach)\s*(\d+)\s*(k|nghin|ngan|trieu)?/);
   const limit = budget ? Number(budget[1]) * (budget[2] === 'trieu' ? 1_000_000 : budget[2] ? 1000 : 1) : Infinity;
   const beginner = /\b(de nuoi|nguoi moi)\b/.test(phrase);
@@ -51,12 +62,16 @@ function candidatesFrom(items: Product[], phrase: string) {
   const smallTank = /\bbe nho\b/.test(phrase);
   const species = /\b(betta|guppy|bay mau|neon|cardinal|koi|ca vang|molly|platy|than tien|dia|la han|rong|ca chuot|pleco)\b/.exec(phrase)?.[1];
   const supplies = /\b(loc|thuc an|hat|artemia|den|suoi|sui|cay thuy sinh|vi sinh|be kinh)\b/.exec(phrase)?.[1];
+  // "cá lóc" là loài cửa hàng không bán; không để từ "loc" khớp nhầm với lọc thác.
+  if (/\bca\s+loc\b/.test(phrase)) return [];
   return items.filter(item => {
     const care = careInfo.safeParse(item.careInfo).data;
     const names = normalize(item.name + ' ' + item.category + ' ' + item.slug);
     const term = species === 'bay mau' ? 'guppy' : species;
     if (term && !names.includes(term)) return false;
     if (!term && supplies && !names.includes(supplies)) return false;
+    if (accentMismatch(raw, term, item.name + ' ' + item.category)) return false;
+    if (!term && accentMismatch(raw, supplies, item.name + ' ' + item.category)) return false;
     if ((beginner || community || algae || compact || smallTank) && !item.isLiveFish) return false;
     if (beginner && care?.difficulty !== 'Dễ') return false;
     if (community && !care?.community) return false;
@@ -162,7 +177,7 @@ export async function handleMessage(input: z.infer<typeof inputSchema>) {
 
   if (!product && (discovery || wantsStock || wantsSelection || wantsCare || aiQuery)) {
     const query = discovery || wantsStock || wantsSelection || wantsCare ? phrase : normalize(aiQuery || '');
-    const matches = candidatesFrom(catalog, query);
+    const matches = candidatesFrom(catalog, query, discovery || wantsStock || wantsSelection || wantsCare ? raw : (aiQuery || ''));
     if (wantsCare && !recommend && matches.length === 1) product = matches[0];
     else if (matches.length) return present(matches, 'Chọn số của mẫu bạn muốn hỏi hoặc đặt.');
     else return handoff('Chưa có dữ liệu sản phẩm/tồn kho phù hợp với yêu cầu');

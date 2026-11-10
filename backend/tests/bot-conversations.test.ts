@@ -92,3 +92,16 @@ afterAll(async()=>{
   console.table(groups);mkdirSync('../docs',{recursive:true});writeFileSync('../docs/bot-accuracy.json',JSON.stringify({at:new Date().toISOString(),cases:results.length,passed:results.filter(r=>r.passed).length,accuracy,groups,method:'Actual handleMessage with isolated seeded SQLite; Messenger transport mocked, no real messages'},null,2)+'\n');
   await db?.$disconnect();for(const suffix of['','-journal','-wal','-shm'])try{unlinkSync(resolve('prisma',filename)+suffix)}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;}
 });
+test('cá lóc (loài không bán) không bị khớp nhầm với lọc thác; "lọc" có dấu vẫn ra lọc thác',async()=>{
+  for(const text of ['muốn mua cá lóc','cá lóc còn hàng không','mua ca loc','cho mình xem cá lóc']){
+    sent.message.mockClear();
+    await handle({mid:randomUUID(),psid:String(++serial),text});
+    expect(JSON.stringify(sent.message.mock.calls), text).not.toContain('Lọc thác');
+  }
+  sent.message.mockClear();
+  await handle({mid:randomUUID(),psid:String(++serial),text:'mình muốn mua lọc'});
+  expect(JSON.stringify(sent.message.mock.calls)).toContain('Lọc thác');
+  sent.message.mockClear();
+  await handle({mid:randomUUID(),psid:String(++serial),text:'mua loc thac'});
+  expect(JSON.stringify(sent.message.mock.calls)).toContain('Lọc thác');
+});
