@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
 import { api, errorText, labels, localDate, money, Order, query, Status } from './api';
 import { Dashboard } from './dashboard';
+import { CouponsAdmin } from './coupons-admin';
 import { ProductsAdmin } from './products-admin';
 import { AdminAlerts, PackingLabel } from './admin-tools';
 
@@ -41,7 +42,7 @@ export function Admin() {
     </form> : <>
       <nav className="admin-nav" aria-label="Quản trị">
         <NavLink end to="/admin">Tổng quan</NavLink><NavLink to="/admin/orders">Đơn hàng</NavLink>
-        <NavLink to="/admin/products">Sản phẩm</NavLink><NavLink to="/admin/support">Hỗ trợ</NavLink>
+        <NavLink to="/admin/products">Sản phẩm</NavLink><NavLink to="/admin/coupons">Mã giảm giá</NavLink><NavLink to="/admin/support">Hỗ trợ</NavLink>
         <button className="text-button" onClick={logout}>Đăng xuất</button>
       </nav>
       <AdminAlerts token={token} />
@@ -49,6 +50,7 @@ export function Admin() {
         <Route index element={<Dashboard token={token} />} />
         <Route path="orders" element={<OrdersAdmin token={token} />} />
         <Route path="products" element={<ProductsAdmin token={token} />} />
+        <Route path="coupons" element={<CouponsAdmin token={token} />} />
         <Route path="support" element={<Support token={token} />} />
         <Route path="*" element={<Link to="/admin">Về tổng quan</Link>} />
       </Routes>

@@ -15,7 +15,7 @@ import { OrderStatus, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { db } from './db';
 import { dayKey, dayStart, addDays, env } from './env';
-import { bankTransferAvailable, paymentSandbox, clean, date, doaPolicy, liveEverywhere, liveProvinces, orderLines, HttpError, orderDetails, orderInput, phone, provinces, psid, qrUrl, required, statusLabels } from './domain';
+import { bankTransferAvailable, paymentSandbox, shippingInfo, clean, date, doaPolicy, liveEverywhere, liveProvinces, orderLines, HttpError, orderDetails, orderInput, phone, provinces, psid, qrUrl, required, statusLabels } from './domain';
 import { changeStatus, createOrder, reconcileBankPayment, trackOrder, updatePayment } from './orders';
 import { couponKinds, normalizeCode, priceCart, quoteInput } from './commerce';
 import { addressInput, changePassword, currentCustomerId, customerIdFrom, finishPasswordReset, loginCustomer, publicCustomer, registerCustomer,
@@ -77,7 +77,7 @@ export function createApp() {
   api.get('/products/:slug', async (req, res) => { res.json(await detailPage(id.parse(req.params.slug))); });
   api.get('/photo-credits', publicLimit, async (_req, res) => res.set('Cache-Control', 'no-store').json(await uploadedPhotoCredits()));
   api.get('/shipping/provinces', (_req, res) => res.json(provinces));
-  api.get('/shipping/policy', (_req, res) => res.json({ doaPolicy, liveProvinces, liveEverywhere }));
+  api.get('/shipping/policy', (_req, res) => res.json({ doaPolicy, liveProvinces, liveEverywhere, freeThreshold: shippingInfo().freeThreshold }));
   // Nội dung cố định phục vụ SEO: thông tin cửa hàng, danh mục có mô tả, trang giới thiệu/chính sách.
   api.get('/site', (_req, res) => res.set('Cache-Control', 'public, max-age=300').json(siteInfo()));
   api.get('/categories', publicLimit, async (_req, res) => {
@@ -313,7 +313,7 @@ export function createApp() {
     ]);
     res.json({ ok: true });
   });
-  api.get('/admin/products', async (_req, res) => res.json(await db.product.findMany({ include: { variants: true }, orderBy: { createdAt: 'desc' } })));
+  api.get('/admin/products', async (_req, res) => res.json(await db.product.findMany({ include: { variants: true, links: { select: { type: true, linked: { select: { slug: true } } } } }, orderBy: { createdAt: 'desc' } })));
   const checkSale = (price: number | undefined, salePrice: number | null | undefined, starts?: Date | null, ends?: Date | null) => {
     if (salePrice != null && price != null && salePrice >= price) throw new HttpError(422, 'Giá khuyến mãi phải nhỏ hơn giá gốc.');
     if (starts && ends && starts > ends) throw new HttpError(422, 'Ngày kết thúc khuyến mãi phải sau ngày bắt đầu.');

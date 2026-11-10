@@ -1,18 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { api, errorText, LivePolicy, money, Product, query } from './api';
+import { api, errorText, Linked, LivePolicy, money, Product, query } from './api';
 import { fitDescription, fitTitle, useSeo } from './seo';
 import { cartFromSession, saveCart } from './cart';
 import { ProductImage, PhotoCredit } from './photos';
 import { Breadcrumb } from './breadcrumb';
+import { PriceTag } from './price';
 import { useCategories, useCategoriesLoading } from './data';
+
+function LinkedCard({ item }: { item: Linked }) {
+  return <Link to={'/san-pham/' + item.slug} className="mini-card"><ProductImage slug={item.slug} source={item.images[0]} thumbnail alt={item.name} />
+    <strong>{item.name}</strong><span>{item.onSale && item.currentPrice != null ? <><del>{money(item.price)}</del> {money(item.currentPrice)}</> : money(item.currentPrice ?? item.price)}</span></Link>;
+}
 
 export function ProductCard({ product }: { product: Product }) {
   const available = product.variants.filter(variant => variant.stock >= variant.minQty);
   const stock = available.length ? available.some(variant => variant.stock > variant.minQty + 4) ? 'Còn hàng' : 'Sắp hết' : 'Hết hàng';
   return <Link className="product-card" to={'/san-pham/' + product.slug}>
-    <div className="product-art tank"><ProductImage slug={product.slug} source={product.images[0]} thumbnail alt={product.name} /><span className={'badge stock-' + (stock === 'Còn hàng' ? 'in' : stock === 'Sắp hết' ? 'low' : 'out')}>{stock}</span></div>
-    <span className="price-tag">{money(product.price)}</span><p className="eyebrow">{product.category}</p><h3>{product.name}</h3>
+    <div className="product-art tank"><ProductImage slug={product.slug} source={product.images[0]} thumbnail alt={product.name} />{product.onSale && <span className="badge sale">-{product.salePercent}%</span>}<span className={'badge stock-' + (stock === 'Còn hàng' ? 'in' : stock === 'Sắp hết' ? 'low' : 'out')}>{stock}</span></div>
+    <span className="price-tag">{product.onSale && product.currentPrice != null ? <><del>{money(product.price)}</del> {money(product.currentPrice)}</> : money(product.currentPrice ?? product.price)}</span><p className="eyebrow">{product.category}</p><h3>{product.name}</h3>
   </Link>;
 }
 
@@ -87,6 +93,7 @@ export function ProductPage() {
   const [photo, setPhoto] = useState(0);
   const [error, setError] = useState('');
   const [policy, setPolicy] = useState<LivePolicy>();
+  const [added, setAdded] = useState('');
   const lowPrice = product ? Math.min(...product.variants.map(row => row.priceOverride ?? product.price)) : 0;
   const inStock = !!product?.variants.some(row => row.stock >= row.minQty);
   useSeo(product ? { title: fitTitle(product.name + ' — Long Fish', [' | Giá Tốt', '']),
@@ -124,11 +131,14 @@ export function ProductPage() {
     const next = rows.find(v => v.stock >= v.minQty) ?? rows[0];
     if (next) { setVariantId(next.id); setQuantity(next.minQty); }
   };
-  const buy = () => {
+  const buy = (goCheckout = true) => {
     if (!variant || quantity < variant.minQty || quantity > variant.stock) return;
-    const cart = cartFromSession().filter(row => row.variantId !== variant.id);
-    saveCart([...cart, { slug: product.slug, variantId: variant.id, quantity }]);
-    navigate('/checkout');
+    const cart = cartFromSession();
+    const existing = cart.find(row => row.variantId === variant.id);
+    // Thêm vào giỏ: cộng dồn số lượng (không vượt tồn kho); Mua ngay: đặt đúng số lượng đang chọn.
+    const total = goCheckout || !existing ? quantity : Math.min(existing.quantity + quantity, variant.stock, 99);
+    saveCart([...cart.filter(row => row.variantId !== variant.id), { slug: product.slug, variantId: variant.id, quantity: total }]);
+    if (goCheckout) navigate('/checkout'); else setAdded('Đã thêm ' + product.name + ' vào giỏ hàng.');
   };
   return <section className="shell section">
     <Breadcrumb trail={[{ name: 'Trang chủ', to: '/' }, ...(group ? [{ name: group.name, to: '/danh-muc/' + group.slug }] : []), { name: product.name }]} />
@@ -138,14 +148,17 @@ export function ProductPage() {
         {product.isLiveFish && <small className="photo-note">Ảnh minh họa dòng cá; màu sắc và hoa văn từng con có thể khác nhau.</small>}
         {product.images.length > 1 && <div className="filters">{product.images.map((src, i) => <button key={i} aria-pressed={i === photo} onClick={() => setPhoto(i)}>Ảnh {i + 1}</button>)}</div>}</div>
       <div className="detail-copy"><p className="eyebrow">{product.category}</p><h1>{product.name}</h1>
-        <p className="price">{money(variant?.priceOverride ?? product.price)}</p><p>{product.description}</p>
+        <p className="price"><PriceTag regular={variant?.regularPrice ?? variant?.priceOverride ?? product.price} unit={variant?.unitPrice ?? variant?.priceOverride ?? product.price} />{variant?.onSale && variant.regularPrice != null && variant.unitPrice != null && <span className="badge sale">Tiết kiệm {money(variant.regularPrice - variant.unitPrice)} (-{Math.round((1 - variant.unitPrice / variant.regularPrice) * 100)}%)</span>}</p><p>{product.description}</p>
         <fieldset><legend>Dòng / màu</legend><div className="filters">{colors.map(color => <button key={color} aria-pressed={color === variant?.color} className={color === variant?.color ? 'chosen' : ''} onClick={() => select(product.variants.filter(v => v.color === color))}>{color}</button>)}</div></fieldset>
         <fieldset><legend>Cỡ</legend><div className="filters">{sizes.map(size => <button key={size} aria-pressed={size === variant?.size} className={size === variant?.size ? 'chosen' : ''} onClick={() => select(byColor.filter(v => v.size === size))}>{size}</button>)}</div></fieldset>
         {product.isLiveFish && <fieldset><legend>Giới tính</legend><div className="filters">{bySize.map(v => <button key={v.id} aria-pressed={v.id === variantId} className={v.id === variantId ? 'chosen' : ''} onClick={() => select([v])}>{v.gender}</button>)}</div></fieldset>}
-        {variant && <p role="status" className="stock">{variant.stock >= variant.minQty ? 'Còn ' + variant.stock + ' ' + variant.unit : 'Hết hàng hoặc chưa đủ lượng tối thiểu'} · Tối thiểu {variant.minQty} {variant.unit}</p>}
+        {variant && <p role="status" className="stock">{variant.stock < variant.minQty ? 'Hết hàng hoặc chưa đủ lượng tối thiểu' : variant.stock <= variant.lowStockThreshold ? 'Chỉ còn ' + variant.stock + ' ' + variant.unit + '!' : 'Còn ' + variant.stock + ' ' + variant.unit} · Tối thiểu {variant.minQty} {variant.unit}</p>}
         {variant && <div className="buy"><label><span className="sr-only">Số lượng</span><input type="number" min={variant.minQty} max={Math.min(variant.stock, 99)} disabled={variant.stock < variant.minQty} value={quantity}
           onChange={e => setQuantity(Math.max(variant.minQty, Math.min(Math.trunc(Number(e.target.value)), variant.stock, 99)))} /></label>
-          <button className="button" disabled={variant.stock < variant.minQty} onClick={buy}>Mua ngay →</button></div>}
+          <button className="button" disabled={variant.stock < variant.minQty} onClick={() => buy(false)}>Thêm vào giỏ</button>
+          <button className="outline" disabled={variant.stock < variant.minQty} onClick={() => buy(true)}>Mua ngay →</button></div>}
+        {added && <p role="status" className="success">{added} <Link to="/gio-hang">Xem giỏ hàng</Link></p>}
+        <ul className="shipping-note"><li>Giao hàng: nhân viên xác nhận lịch giao sau khi nhận đơn.</li><li>{policy?.freeThreshold ? 'Miễn phí vận chuyển cho đơn từ ' + money(policy.freeThreshold) + '.' : 'Phí vận chuyển hiển thị ở bước thanh toán.'}</li><li>Đổi trả: xem <Link to="/chinh-sach-doi-tra">chính sách đổi trả</Link>.</li></ul>
         {(!variant || variant.stock < variant.minQty) && !!product.alternatives?.length && <aside className="panel stack alternatives" aria-label="Mẫu cùng nhóm còn hàng"><h2>Mẫu cùng nhóm còn hàng</h2>
           <div className="alt-grid">{product.alternatives.map(item => <Link key={item.id} className="product-card" to={'/san-pham/' + item.slug}><strong>{item.name}</strong><span>{money(item.price)}</span></Link>)}</div></aside>}
         {product.isLiveFish && policy && <aside className="policy"><strong>Cam kết cá sống khi nhận</strong><p>{policy.doaPolicy}</p></aside>}
@@ -157,6 +170,10 @@ export function ProductPage() {
           {product.careInfo.source && /^https:\/\//.test(product.careInfo.source) && <a className="text-button" href={product.careInfo.source}>Nguồn tham khảo</a>}</div>}
       </div>
     </div>
+    {!!product.crossSells?.length && <section className="related" aria-labelledby="cross-title"><h2 id="cross-title">Mua kèm cho bể của bạn</h2>
+      <div className="mini-grid">{product.crossSells.map(item => <LinkedCard key={item.id} item={item} />)}</div></section>}
+    {!!product.upSells?.length && <section className="related" aria-labelledby="up-title"><h2 id="up-title">Bạn có thể thích hơn</h2>
+      <div className="mini-grid">{product.upSells.map(item => <LinkedCard key={item.id} item={item} />)}</div></section>}
     {related.length > 0 && <section className="related" aria-labelledby="related-title"><h2 id="related-title">Sản phẩm liên quan</h2>
       <div className="grid-products">{related.map(row => <ProductCard key={row.id} product={row} />)}</div></section>}
   </section>;

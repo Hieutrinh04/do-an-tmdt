@@ -89,19 +89,24 @@ async function checkout(page: Page, payment: 'COD' | 'BANK_QR', info: TestInfo) 
   await page.getByRole('button', { name: /Mua ngay/ }).click();
   await page.getByLabel('Họ và tên').fill('Khách thử Playwright');
   await page.getByLabel('Số điện thoại').fill(phone);
+  await page.getByLabel('Email', { exact: true }).fill('playwright@example.com');
   await page.getByLabel('Quận / huyện').fill('Quận thử');
+  await page.getByLabel('Phường / xã').fill('Phường thử');
   await page.getByLabel('Địa chỉ cụ thể').fill('Địa chỉ thử');
-  await page.getByLabel('Ghi chú nhận hàng').fill('TEST playwright');
+  await page.getByLabel(/Ghi chú đơn hàng/).fill('TEST playwright');
   const submit = page.getByRole('button', { name: 'Đặt hàng →' });
   const doa = page.getByLabel('Tôi đã đọc chính sách cá sống');
   await page.getByLabel('Tỉnh / thành').fill('An Giang');
   await doa.check();
-  await expect(page.getByRole('alert')).toContainText('chưa giao cá sống');
-  await expect(submit).toBeDisabled();
+  const policy = await (await page.request.get('/api/shipping/policy')).json() as { liveEverywhere?: boolean };
+  if (!policy.liveEverywhere) {
+    await expect(page.getByRole('alert')).toContainText('chưa giao cá sống');
+    await expect(submit).toBeDisabled();
+  }
   const quote = page.waitForResponse(response => response.url().endsWith('/api/shipping/quote') && response.request().postData()?.includes('Hồ Chí Minh') === true);
   await page.getByLabel('Tỉnh / thành').fill('Hồ Chí Minh');
-  const { subtotal, shippingFee, packingFee, total } = await (await quote).json();
-  expect(total).toBe(subtotal + shippingFee + packingFee);
+  const { subtotal, discount, shippingFee, packingFee, total } = await (await quote).json();
+  expect(total).toBe(subtotal - discount + shippingFee + packingFee);
   for (const value of [subtotal, shippingFee, packingFee, total]) await expect(page.locator('.totals')).toContainText(money(value));
   await expect(submit).toBeEnabled();
   await doa.uncheck();
@@ -204,4 +209,52 @@ test('admin drags in two photos, reorders, selects cover and removes', async ({ 
   await saved.locator('summary').first().click();
   await saved.getByRole('button', { name: 'Ẩn', exact: true }).click();
   await expect(saved.locator('summary').first()).toContainText('Đã ẩn');
+});
+
+test('giá khuyến mãi, thêm vào giỏ, mini cart, giỏ hàng với mã giảm giá và phí giao theo tỉnh (chỉ đọc, không đặt đơn)', async ({ page }) => {
+  await page.goto('/san-pham/betta-halfmoon');
+  await expect(page.locator('.price del')).toContainText('69.000');
+  await expect(page.locator('.price strong')).toContainText('59.000');
+  await expect(page.getByRole('heading', { name: 'Mua kèm cho bể của bạn' })).toBeVisible();
+  await expect(page.locator('.shipping-note')).toContainText('Miễn phí vận chuyển');
+  await page.getByRole('button', { name: 'Thêm vào giỏ' }).click();
+  await expect(page.getByText(/Đã thêm Betta Halfmoon vào giỏ hàng/)).toBeVisible();
+  await expect(page.locator('.cart-badge')).toHaveText('1');
+  // Mini cart: rê chuột vào biểu tượng giỏ hàng
+  await page.locator('.mini-cart').hover();
+  const mini = page.getByRole('dialog', { name: 'Giỏ hàng thu nhỏ' });
+  await expect(mini).toContainText('Betta Halfmoon');
+  await expect(mini).toContainText('59.000');
+  await expect(mini.getByRole('link', { name: 'Xem giỏ hàng' })).toBeVisible();
+  await expect(mini.getByRole('link', { name: 'Thanh toán' })).toBeVisible();
+  await mini.getByRole('link', { name: 'Xem giỏ hàng' }).click();
+  await expect(page).toHaveURL(/\/gio-hang$/);
+  await page.getByLabel('Tỉnh / thành (ước tính phí giao)').fill('Hà Nội');
+  await page.getByLabel('Mã giảm giá').fill('khongco');
+  await page.getByRole('button', { name: 'Áp dụng' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'không tồn tại' })).toBeVisible();
+  await page.getByLabel('Mã giảm giá').fill('welcome10');
+  await page.getByRole('button', { name: 'Áp dụng' }).click();
+  await expect(page.getByText(/Đã áp dụng mã WELCOME10/)).toBeVisible();
+  const totals = page.locator('.cart-summary .totals');
+  await expect(totals).toContainText('-5.900');
+  await expect(totals).toContainText('30.000');
+  await expect(page.getByRole('link', { name: 'Tiếp tục mua sắm' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Tiến hành thanh toán/ })).toBeEnabled();
+  await page.getByRole('button', { name: 'Xóa Betta Halfmoon khỏi giỏ' }).click();
+  await expect(page.getByText('Giỏ hàng của bạn đang trống.')).toBeVisible();
+});
+
+test('trang tài khoản có form Đăng nhập và Đăng ký, link Quên mật khẩu; trang chính sách, giới thiệu, liên hệ hiển thị', async ({ page }) => {
+  await page.goto('/tai-khoan');
+  await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Đăng ký' })).toBeVisible();
+  await page.getByRole('link', { name: 'Quên mật khẩu?' }).click();
+  await expect(page.getByRole('heading', { name: 'Quên mật khẩu' })).toBeVisible();
+  for (const [path, heading] of [['/gioi-thieu', 'Giới thiệu Long Fish'], ['/lien-he', 'Liên hệ Long Fish'], ['/chinh-sach-doi-tra', 'Chính sách đổi trả & hoàn tiền'],
+    ['/chinh-sach-bao-mat', 'Chính sách bảo mật'], ['/chinh-sach-van-chuyen', 'Chính sách vận chuyển']]) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+  }
+  await expect(page.getByRole('table')).toBeVisible();
 });

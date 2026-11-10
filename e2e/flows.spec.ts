@@ -129,12 +129,13 @@ test('khách nhập email khi đặt hàng thì n8n gửi email xác nhận (moc
   await page.getByRole('button', { name: /Mua ngay/ }).click();
   await page.getByLabel('Họ và tên').fill('Khách email Playwright');
   await page.getByLabel('Số điện thoại').fill('0900000015');
-  const email = page.getByLabel('Email (không bắt buộc)');
+  const email = page.getByLabel('Email', { exact: true });
   await expect(email).toHaveAttribute('type', 'email');
   const address = 'e2e-' + run + '@example.com';
   await email.fill(address);
   await page.getByLabel('Tỉnh / thành').fill('Hồ Chí Minh');
   await page.getByLabel('Quận / huyện').fill('Quận thử');
+  await page.getByLabel('Phường / xã').fill('Phường thử');
   await page.getByLabel('Địa chỉ cụ thể').fill('TEST email');
   const order = page.waitForResponse(response => response.url().endsWith('/api/orders') && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Đặt hàng →' }).click();

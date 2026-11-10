@@ -37,13 +37,15 @@ export function useSeo(seo: Seo | undefined) {
 }
 
 const pages: Record<string, Seo> = {
-  '/checkout': { title: 'Chốt đơn | Long Fish', noindex: true },
+  '/checkout': { title: 'Thanh toán | Long Fish', noindex: true },
+  '/gio-hang': { title: 'Giỏ hàng | Long Fish', noindex: true },
   '/confirmation': { title: 'Đặt hàng thành công | Long Fish', noindex: true },
   '/track': { title: 'Tra cứu đơn hàng | Long Fish', noindex: true },
   '/credits': { title: 'Nguồn ảnh | Long Fish', description: 'Danh sách tác giả, giấy phép và nguồn của các ảnh sản phẩm trên Long Fish.' },
 };
 
 export function seoForPath(pathname: string): Seo | undefined {
+  if (pathname.startsWith('/tai-khoan')) return { title: 'Tài khoản | Long Fish', noindex: true };
   if (pathname.startsWith('/admin')) return { title: 'Quản trị | Long Fish', noindex: true };
   return pages[pathname];
 }

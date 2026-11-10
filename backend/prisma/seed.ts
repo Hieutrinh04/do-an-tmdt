@@ -32,7 +32,7 @@ async function seedCommerce(withProducts: boolean) {
   if (!first || !withProducts) return;
 
   const sales: [string, number, number | null][] = [
-    ['betta-halfmoon', 59000, null], ['guppy-fancy', 24000, 14], ['be-kinh-40', 149000, 30], ['loc-thac', 199000, 30], ['ca-vang-ranchu', 129000, null],
+    ['betta-halfmoon', 59000, null], ['guppy-fancy', 24000, 14], ['be-kinh-40', 239000, 30], ['loc-thac', 149000, 30], ['ca-vang-ranchu', 129000, null],
   ];
   for (const [slug, salePrice, days] of sales) {
     const product = await db.product.findUnique({ where: { slug } });

@@ -55,6 +55,9 @@ function ProductForm({ product, save, busy, token }: { product?: Product; save: 
     await save(product ? productsPath + '/' + product.id : productsPath, product ? 'PATCH' : 'POST', {
       name: fields.get('name'), slug: fields.get('slug'), description: fields.get('description'), category: fields.get('category'),
       price: Number(fields.get('price')), isActive: fields.has('isActive'), isLiveFish: live,
+      salePrice: fields.get('salePrice') ? Number(fields.get('salePrice')) : null,
+      saleStartsAt: fields.get('saleStartsAt') ? new Date(String(fields.get('saleStartsAt'))).toISOString() : null,
+      saleEndsAt: fields.get('saleEndsAt') ? new Date(String(fields.get('saleEndsAt'))).toISOString() : null,
       careInfo: live ? {
         ...Object.fromEntries(['scientificName','temperature','ph','temperament','difficulty','food'].map(key => [key, fields.get(key)])),
         adultCm: Number(fields.get('adultCm')), minTankLiters: Number(fields.get('minTankLiters')), source: fields.get('source') || undefined,
@@ -62,13 +65,34 @@ function ProductForm({ product, save, busy, token }: { product?: Product; save: 
       } : undefined,
       images,
     });
+    if (product) {
+      // Sản phẩm mua kèm (CROSSSELL) và đề xuất thay thế (UPSELL): mỗi dòng hoặc mỗi dấu phẩy là một slug.
+      const list = (key: string) => String(fields.get(key) || '').split(/[\s,]+/).map(value => value.trim()).filter(Boolean);
+      await save(productsPath + '/' + product.id + '/links', 'PUT', { CROSSSELL: list('crossSell'), UPSELL: list('upSell') });
+    }
     if (!product) { form.reset(); setLive(false); setImageText(''); }
   }
+  const localInput = (value?: string | null) => {
+    if (!value) return '';
+    const date = new Date(value);
+    const pad = (number: number) => String(number).padStart(2, '0');
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  };
+  const linkedSlugs = (type: string) => (product?.links || []).filter(link => link.type === type).map(link => link.linked.slug).join(', ');
   return <form className="form-grid" onSubmit={event => void submit(event).catch(() => {})}>
     <label>Tên sản phẩm<input name="name" required maxLength={120} defaultValue={product?.name} /></label>
     <label>Đường dẫn (slug)<input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxLength={100} defaultValue={product?.slug} /></label>
     <label>Danh mục<input name="category" required maxLength={80} defaultValue={product?.category} /></label>
-    <label>Giá (₫)<input name="price" type="number" min={0} max={20000000} required defaultValue={product?.price} /></label>
+    <label>Giá gốc (₫)<input name="price" type="number" min={0} max={20000000} required defaultValue={product?.price} /></label>
+    <fieldset className="full panel form-grid"><legend>Khuyến mãi (để trống nếu không giảm giá)</legend>
+      <label>Giá khuyến mãi (₫, nhỏ hơn giá gốc)<input name="salePrice" type="number" min={0} max={20000000} defaultValue={product?.salePrice ?? ''} /></label>
+      <label>Bắt đầu (không bắt buộc)<input name="saleStartsAt" type="datetime-local" defaultValue={localInput(product?.saleStartsAt)} /></label>
+      <label>Kết thúc (không bắt buộc)<input name="saleEndsAt" type="datetime-local" defaultValue={localInput(product?.saleEndsAt)} /></label>
+    </fieldset>
+    {product && <fieldset className="full panel form-grid"><legend>Sản phẩm liên quan</legend>
+      <label>Mua kèm (slug, cách nhau bằng dấu phẩy)<textarea name="crossSell" rows={2} defaultValue={linkedSlugs('CROSSSELL')} /></label>
+      <label>Đề xuất thay thế / nâng cấp (slug)<textarea name="upSell" rows={2} defaultValue={linkedSlugs('UPSELL')} /></label>
+    </fieldset>}
     <label className="full">Mô tả<textarea name="description" required maxLength={1500} defaultValue={product?.description} /></label>
     <fieldset className="full panel stack"><legend>Ảnh sản phẩm</legend>
       <label className="upload-drop" onDragOver={event => event.preventDefault()} onDrop={event => {

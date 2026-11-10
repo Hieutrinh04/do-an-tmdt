@@ -14,6 +14,8 @@ import { CreditsPage } from './photos';
 import { applySeo, seoForPath } from './seo';
 import { useCategories, useSite } from './data';
 import { cartChanged, cartCount } from './cart';
+import { MiniCart } from './mini-cart';
+import { useCustomer } from './auth';
 
 // Tách mã theo trang: trang chủ và sản phẩm tải nhanh hơn vì không phải tải cả giỏ hàng, tra cứu, danh mục và trang nội dung.
 const Checkout = lazy(() => import('./checkout').then(module => ({ default: module.Checkout })));
@@ -21,6 +23,10 @@ const Confirm = lazy(() => import('./checkout').then(module => ({ default: modul
 const Track = lazy(() => import('./checkout').then(module => ({ default: module.Track })));
 const CategoryPage = lazy(() => import('./pages').then(module => ({ default: module.CategoryPage })));
 const ContentPage = lazy(() => import('./pages').then(module => ({ default: module.ContentPage })));
+const CartPage = lazy(() => import('./cart-page').then(module => ({ default: module.CartPage })));
+const AccountPage = lazy(() => import('./account').then(module => ({ default: module.AccountPage })));
+const ForgotPassword = lazy(() => import('./account').then(module => ({ default: module.ForgotPassword })));
+const ResetPassword = lazy(() => import('./account').then(module => ({ default: module.ResetPassword })));
 const Admin = lazy(() => import('./admin').then(module => ({ default: module.Admin }))); 
 
 function LegacyProduct() { const { slug } = useParams(); return <Navigate replace to={'/san-pham/' + slug} />; }
@@ -29,6 +35,7 @@ function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const categories = useCategories();
+  const { customer } = useCustomer();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(cartCount);
   const [term, setTerm] = useState('');
@@ -51,12 +58,13 @@ function Header() {
         <NavLink to="/gioi-thieu">Giới thiệu</NavLink>
         <NavLink to="/track">Tra cứu đơn</NavLink>
         <NavLink to="/lien-he">Liên hệ</NavLink>
+        <NavLink to="/tai-khoan">{customer ? customer.name.split(' ').slice(-1)[0] : 'Tài khoản'}</NavLink>
       </nav>
       <form className="header-search" role="search" onSubmit={search}><label className="sr-only" htmlFor="header-q">Tìm sản phẩm</label>
         <input id="header-q" type="search" value={term} onChange={event => setTerm(event.target.value)} placeholder="Tìm sản phẩm..." />
         <button type="submit" aria-label="Tìm kiếm">🔍</button></form>
     </div>
-    <Link className="cart-link" to="/checkout" aria-label={'Giỏ hàng, ' + count + ' sản phẩm'}><span aria-hidden="true">🛒</span>{count > 0 && <span className="cart-badge">{count}</span>}</Link>
+    <MiniCart count={count} />
   </div></header>;
 }
 
@@ -71,7 +79,7 @@ function Footer() {
         {site?.tiktok && <a href={site.tiktok} target="_blank" rel="noopener noreferrer">TikTok</a>}
         {site?.instagram && <a href={site.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}</p></section>
     <nav aria-label="Liên kết nhanh"><h2>Liên kết nhanh</h2><ul>
-      <li><Link to="/">Trang chủ</Link></li><li><Link to="/#san-pham">Cửa hàng</Link></li><li><Link to="/gioi-thieu">Giới thiệu</Link></li><li><Link to="/lien-he">Liên hệ</Link></li>
+      <li><Link to="/">Trang chủ</Link></li><li><Link to="/#san-pham">Cửa hàng</Link></li><li><Link to="/gioi-thieu">Giới thiệu</Link></li><li><Link to="/lien-he">Liên hệ</Link></li><li><Link to="/tai-khoan">Tài khoản của tôi</Link></li>
       <li><Link to="/chinh-sach-doi-tra">Chính sách đổi trả</Link></li><li><Link to="/chinh-sach-bao-mat">Chính sách bảo mật</Link></li><li><Link to="/chinh-sach-van-chuyen">Chính sách vận chuyển</Link></li></ul></nav>
     <nav aria-label="Danh mục sản phẩm"><h2>Danh mục</h2><ul>{categories.slice(0, 6).map(item => <li key={item.slug}><Link to={'/danh-muc/' + item.slug}>{item.name}</Link></li>)}</ul></nav>
     <section><h2>Liên hệ & hỗ trợ</h2><ul className="contact-list">
@@ -100,7 +108,7 @@ function StoreLayout() {
       <Route path="/gioi-thieu" element={<ContentPage slug="gioi-thieu" />} /><Route path="/lien-he" element={<ContentPage slug="lien-he" />} />
       <Route path="/chinh-sach-doi-tra" element={<ContentPage slug="chinh-sach-doi-tra" />} /><Route path="/chinh-sach-bao-mat" element={<ContentPage slug="chinh-sach-bao-mat" />} />
       <Route path="/chinh-sach-van-chuyen" element={<ContentPage slug="chinh-sach-van-chuyen" />} />
-      <Route path="/checkout" element={<Checkout />} /><Route path="/confirmation" element={<Confirm />} /><Route path="/track" element={<Track />} />
+      <Route path="/gio-hang" element={<CartPage />} /><Route path="/tai-khoan/quen-mat-khau" element={<ForgotPassword />} /><Route path="/tai-khoan/dat-lai-mat-khau" element={<ResetPassword />} /><Route path="/tai-khoan/*" element={<AccountPage />} /><Route path="/checkout" element={<Checkout />} /><Route path="/confirmation" element={<Confirm />} /><Route path="/track" element={<Track />} />
       <Route path="/admin/*" element={<Suspense fallback={<p className="shell section">Đang tải quản trị…</p>}><Admin /></Suspense>} /><Route path="*" element={<section className="shell section"><h1>Không tìm thấy trang</h1><Link to="/">Về cửa hàng</Link></section>} />
     </Routes></Suspense></main>
     <Footer />
