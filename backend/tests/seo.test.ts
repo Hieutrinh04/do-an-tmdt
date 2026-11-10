@@ -94,3 +94,13 @@ test('sitemap chỉ có trang công khai và sản phẩm đang bán; robots.txt
   const robots = (await api.get('/seo/robots.txt').expect(200)).text;
   for (const line of ['Disallow: /admin', 'Disallow: /api/', 'Disallow: /checkout', 'Disallow: /confirmation', 'Disallow: /track', 'Sitemap: https://long-fish.example/sitemap.xml']) expect(robots).toContain(line);
 });
+
+test('trang HTML do backend trả có CSP cho phép ảnh QR VietQR và ảnh https (không bị chặn như mặc định helmet)', async () => {
+  for (const path of ['/seo/home', '/seo/product/betta-halfmoon']) {
+    const csp = String((await api.get(path).expect(200)).headers['content-security-policy']);
+    expect(csp).toContain("img-src 'self' data: https:");
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).not.toContain("'unsafe-eval'");
+  }
+});

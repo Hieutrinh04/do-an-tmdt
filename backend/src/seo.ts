@@ -65,8 +65,17 @@ function organization(base: string) {
 
 export const seo = Router();
 
+// Trang HTML do backend trả về phải có CSP đúng cho giao diện: ảnh QR VietQR và ảnh sản phẩm dùng link https bên ngoài cần img-src https:.
+// (Mặc định của helmet là img-src 'self' data:, sẽ chặn ảnh QR thanh toán.)
+export const pageCsp = [
+  "default-src 'self'", "base-uri 'self'", "font-src 'self' https: data:", "form-action 'self'", "frame-ancestors 'self'",
+  "img-src 'self' data: https:", "object-src 'none'", "script-src 'self'", "script-src-attr 'none'",
+  "style-src 'self' https: 'unsafe-inline'", "connect-src 'self'", 'upgrade-insecure-requests',
+].join(';');
+
 const sendHtml = (res: import('express').Response, html: string) =>
-  res.set('Content-Type', 'text/html; charset=utf-8').set('Cache-Control', 'public, max-age=60').send(html);
+  res.set('Content-Type', 'text/html; charset=utf-8').set('Cache-Control', 'public, max-age=60')
+    .set('Content-Security-Policy', pageCsp).send(html);
 
 seo.get('/home', async (req, res) => {
   const base = baseUrl(req);
