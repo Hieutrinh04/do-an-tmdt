@@ -4,7 +4,7 @@ import { db } from './db';
 import { env } from './env';
 import { thumbnailPath } from './image-path';
 import { careInfo, detail, products, stock } from './catalog';
-import { HttpError, normalize, phone, statusLabels, doaPolicy, liveProvinces } from './domain';
+import { HttpError, normalize, phone, statusLabels, doaPolicy, liveProvinces, liveEverywhere } from './domain';
 import { messengerLink, sendMessenger, sendTyping } from './messenger';
 import { businessHours, customerPhrase, intentFor } from './bot-language';
 import { trackOrder } from './orders';
@@ -117,7 +117,7 @@ export async function handleMessage(input: z.infer<typeof inputSchema>) {
   if (intent === 'attachment') return reply([text('Mình đã nhận ' + (parsed.attachmentType === 'location' ? 'vị trí' : 'ảnh/sticker') + '. Bot chưa nhận diện nội dung này. Bạn gõ tên cá hoặc chọn Gặp nhân viên để kiểm tra nhé.')]);
   if (intent === 'shipping') {
     if (/bao lau|may ngay|ngay mai|hom nay.*nhan/.test(phrase)) return handoff('Cần nhân viên xác nhận lịch giao, bot không hứa thời gian');
-    return reply([text('Cá sống chỉ giao trong vùng: ' + liveProvinces.join(', ') + '. Phí giao và đóng gói được tính theo địa chỉ/giỏ trên website. ' + doaPolicy)]);
+    return reply([text((liveEverywhere ? 'Long Fish giao cá sống toàn quốc.' : 'Cá sống chỉ giao trong vùng: ' + liveProvinces.join(', ') + '.') + ' Phí giao và đóng gói được tính theo địa chỉ/giỏ trên website. ' + doaPolicy)]);
   }
   const orderCode = raw.match(/\bDH\d{8}-\d{4,10}\b/i)?.[0].toUpperCase();
   if (orderCode || selection.code) {

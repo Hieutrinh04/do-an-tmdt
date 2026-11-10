@@ -95,7 +95,7 @@ export function Checkout() {
           <label>Ghi chú nhận hàng<textarea name="note" maxLength={300} rows={2} /></label>
           {hasLiveFish && <aside className="policy"><strong>Cam kết cá sống khi nhận</strong>
             <p>{policy?.doaPolicy || 'Đang tải chính sách…'}</p>
-            {policy && <small>Giao cá sống tại {policy.liveProvinces.join(', ') || 'chưa có khu vực hỗ trợ'}.</small>}
+            {policy && <small>{policy.liveEverywhere ? 'Giao cá sống toàn quốc.' : 'Giao cá sống tại ' + (policy.liveProvinces.join(', ') || 'chưa có khu vực hỗ trợ') + '.'}</small>}
             <label className="radio"><input type="checkbox" required disabled={!policy} checked={doaAccepted} onChange={e => setDoaAccepted(e.target.checked)} /> Tôi đã đọc chính sách cá sống</label>
           </aside>}
           <fieldset><legend>Thanh toán</legend>

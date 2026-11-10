@@ -26,10 +26,15 @@ const currency = z.coerce.number().int().min(0).max(100_000_000);
 const freeThreshold = currency.parse(env.SHIPPING_FREE_THRESHOLD || 600000);
 const defaultFee = currency.parse(env.SHIPPING_DEFAULT_FEE || 35000);
 const fees = z.record(z.string(), currency).parse(JSON.parse(env.SHIPPING_FEES_JSON || '{"Hồ Chí Minh":20000,"Hà Nội":30000,"Đà Nẵng":30000}'));
-export const provinces = Object.keys(fees);
+const vietnamProvinces = ['Hà Nội', 'Huế', 'Lai Châu', 'Điện Biên', 'Sơn La', 'Lạng Sơn', 'Quảng Ninh', 'Thanh Hóa', 'Nghệ An', 'Hà Tĩnh', 'Cao Bằng',
+  'Tuyên Quang', 'Lào Cai', 'Thái Nguyên', 'Phú Thọ', 'Bắc Ninh', 'Hưng Yên', 'Hải Phòng', 'Ninh Bình', 'Quảng Trị', 'Đà Nẵng', 'Quảng Ngãi',
+  'Gia Lai', 'Khánh Hòa', 'Lâm Đồng', 'Đắk Lắk', 'Hồ Chí Minh', 'Đồng Nai', 'Tây Ninh', 'Cần Thơ', 'Vĩnh Long', 'Đồng Tháp', 'Cà Mau', 'An Giang'];
+export const provinces = [...new Set([...Object.keys(fees), ...vietnamProvinces])];
 export const liveProvinces = z.array(z.string().trim().min(1)).parse(
   JSON.parse(env.LIVE_FISH_PROVINCES_JSON || '["Hồ Chí Minh","Hà Nội","Đà Nẵng"]'),
 );
+// Đặt LIVE_FISH_PROVINCES_JSON='["*"]' để giao cá sống toàn quốc.
+export const liveEverywhere = liveProvinces.includes('*');
 const livePackingFee = currency.parse(env.LIVE_FISH_PACKING_FEE || 30000);
 const shopName = env.SHOP_NAME?.trim() || 'Long Fish';
 export const doaPolicy = 'Với đơn có cá sống, quay video liền mạch khi mở thùng trong vòng 2 giờ từ lúc nhận. Gửi video và mã đơn cho ' + shopName + ' trong thời hạn này để được xem xét bù cá hoặc hoàn tiền phần cá chết khi nhận.';
@@ -44,7 +49,7 @@ export function quote(province: string, subtotal: number, hasLiveFish = false) {
   const entry = Object.entries(fees).find(([name]) => provinceKey(name) === key);
   const shippingFee = subtotal >= freeThreshold ? 0 : entry?.[1] ?? defaultFee;
   const packingFee = hasLiveFish ? livePackingFee : 0;
-  const liveDeliveryAvailable = !hasLiveFish || liveProvinces.some(name => provinceKey(name) === key);
+  const liveDeliveryAvailable = !hasLiveFish || liveEverywhere || liveProvinces.some(name => provinceKey(name) === key);
   return { subtotal, shippingFee, packingFee, total: subtotal + shippingFee + packingFee,
     hasLiveFish, liveDeliveryAvailable, freeThreshold };
 }

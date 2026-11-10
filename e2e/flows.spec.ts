@@ -148,7 +148,7 @@ test('khách nhập email khi đặt hàng thì n8n gửi email xác nhận (moc
     { timeout: 45_000, intervals: [1_000, 2_000, 3_000] }).toBe(true);
 });
 
-test('phụ kiện được giao ngoài vùng cá sống, cá sống thì bị chặn', async ({ request }) => {
+test('phụ kiện luôn được giao; cá sống bị chặn ngoài vùng, hoặc được giao khi bật giao toàn quốc', async ({ request }) => {
   const token = await adminToken(request);
   const accessory = await createProduct(request, token, 'phukien', 5, false);
   const fish = await createProduct(request, token, 'ca', 5, true);
@@ -159,7 +159,8 @@ test('phụ kiện được giao ngoài vùng cá sống, cá sống thì bị c
   const accessoryOrder = await request.post('/api/orders', { data: { ...base, doaAccepted: false, items: [{ variantId: accessory.variant.id, quantity: 1 }] } });
   expect(accessoryOrder.status()).toBe(201);
   const fishOrder = await request.post('/api/orders', { data: { ...base, doaAccepted: true, items: [{ variantId: fish.variant.id, quantity: 1 }] } });
-  expect(fishOrder.status()).toBe(422);
+  const policy = await (await request.get('/api/shipping/policy')).json() as { liveEverywhere?: boolean };
+  expect(fishOrder.status()).toBe(policy.liveEverywhere ? 201 : 422);
 });
 
 test('đăng nhập admin sai nhiều lần bị khóa tạm', async ({ request }, info) => {

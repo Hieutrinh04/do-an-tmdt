@@ -27,7 +27,7 @@ Bắt buộc nghĩa là cần cấu hình khi chạy thật. Docker demo có th�
 | SHIPPING_FREE_THRESHOLD | Tùy chọn | 600000 |
 | SHIPPING_DEFAULT_FEE | Tùy chọn | 35000 |
 | SHIPPING_FEES_JSON | Tùy chọn | '{"Hồ Chí Minh":20000,"Hà Nội":30000,"Đà Nẵng":30000}' |
-| LIVE_FISH_PROVINCES_JSON | Tùy chọn | '["Hồ Chí Minh","Hà Nội","Đà Nẵng"]' |
+| LIVE_FISH_PROVINCES_JSON | Tùy chọn | Danh sách tỉnh giao cá sống, ví dụ '["Hồ Chí Minh","Hà Nội"]'. Đặt '["*"]' để giao cá sống toàn quốc (bản hiện tại). Phí ship tỉnh không có trong SHIPPING_FEES_JSON lấy theo SHIPPING_DEFAULT_FEE. |
 | LIVE_FISH_PACKING_FEE | Tùy chọn | 30000 |
 | VIETQR_BANK | Tùy chọn | (để trống trong mẫu) |
 | VIETQR_ACCOUNT | Tùy chọn | (để trống trong mẫu) |

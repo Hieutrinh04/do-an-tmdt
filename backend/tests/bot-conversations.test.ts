@@ -9,6 +9,7 @@ const filename = 'bot-test-' + randomUUID() + '.db';
 process.env.DATABASE_URL = 'file:./' + filename;
 process.env.SEED_DEMO = 'true'; process.env.MOCK_INTEGRATIONS = 'true';
 process.env.SHOP_OPEN_HOUR = '0'; process.env.SHOP_CLOSE_HOUR = '24';
+process.env.LIVE_FISH_PROVINCES_JSON = '["Hồ Chí Minh","Hà Nội"]';
 delete process.env.ADMIN_PASSWORD;
 let db: typeof import('../src/db').db;
 let handle: typeof import('../src/bot').handleMessage;
