@@ -1,11 +1,10 @@
 {
-  "at": "2026-11-09T08:09:50.339Z",
+  "at": "2026-11-10T03:08:47.172Z",
   "projects": [
-    "long-fish-e2e",
-    "long-fish-e2e-pg",
-    "long-fish-restore-20261109144601"
+    "long-fish-e2e-b5",
+    "long-fish-e2e-b6"
   ],
-  "backedUpVolumes": 12,
+  "backedUpVolumes": 8,
   "primaryCountsBefore": [
     48,
     32
@@ -15,9 +14,9 @@
     32
   ],
   "primaryHealth": [
-    "long-fish-frontend-1|Up 12 minutes",
-    "long-fish-backend-1|Up 13 minutes (healthy)",
-    "long-fish-n8n-1|Up 5 hours (healthy)"
+    "long-fish-n8n-1|Up 55 minutes (healthy)",
+    "long-fish-frontend-1|Up About an hour",
+    "long-fish-backend-1|Up About an hour (healthy)"
   ],
-  "backup": "D:\\Đồ án TMĐT\\data\\cleanup-2026-11-09T08-09-15-099Z"
+  "backup": "D:\\Đồ án TMĐT\\data\\cleanup-2026-11-10T03-08-23-358Z"
 }

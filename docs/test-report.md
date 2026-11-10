@@ -118,3 +118,7 @@ Kết quả chạy lại trực tiếp trên stack `long-fish` (cổng 8080), `M
 | Ghi chú ảnh minh họa trên trang cá | PASS | Thêm dòng "Ảnh minh họa dòng cá; màu sắc và hoa văn từng con có thể khác nhau." để tránh hiểu nhầm khi ảnh khác màu đang chọn. |
 
 Chưa kiểm chứng: đơn thật đi qua Messenger/Sheets/email, AI trong bot, tin ngoài cửa sổ 24 giờ, lịch n8n đúng giờ, triển khai domain công khai. 10 sản phẩm vẫn dùng ảnh minh họa vì chưa có khóa ảnh stock và cần chủ dự án tự chụp.
+
+### Đơn thử thật ngày 10/11/2026
+
+Đơn `DH20261110-0001` (COD, Betta Halfmoon, Quận 1 TP.HCM, tổng 119.000 ₫ gồm hàng 69.000, ship 20.000, đóng gói 30.000) đặt qua API web ở chế độ thật. Kết quả: n8n "Đơn hàng mới" thành công, dòng xuất hiện trong tab `Long_Fish_Orders`, chủ dự án xác nhận đã nhận email thông báo đơn mới. Sau đó hủy qua admin: tồn kho hoàn về 3, workflow "Cập nhật trạng thái" thành công, Sheet đổi sang `CANCELLED`, tra cứu hiển thị đúng lịch sử. Đơn không có PSID nên chưa kiểm tra tin Messenger; luồng chat Fanpage thật vẫn chưa kiểm chứng.
