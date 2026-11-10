@@ -13,9 +13,9 @@
 
 ## 6.2 Hạn chế trung thực
 
-- **Chưa nối dịch vụ thật.** Facebook Page và webhook HTTPS, Google Sheets, SMTP và tài khoản ngân hàng chưa được kiểm chứng vì thiếu tài khoản và khóa. Toàn bộ kết quả tích hợp là mock. `verify:all` vì vậy vẫn báo FAIL ở bước tích hợp, và đó là đúng thiết kế.
+- **Dịch vụ thật mới kiểm chứng từng phần.** Messenger, Google Sheets và Gmail đã kết nối bằng tài khoản thật và `check:integrations` báo OK, nhưng chưa có một đơn thật đi trọn luồng từ tin nhắn khách tới Sheet và email. Ứng dụng Meta còn ở chế độ phát triển nên chỉ tài khoản quản trị nhận được trả lời. Hệ thống đang chạy trên máy cá nhân qua tunnel tạm, chưa có máy chủ và tên miền cố định. Tài khoản ngân hàng VietQR chưa được cấu hình.
 - **Chatbot dựa trên luật.** Độ chính xác 100% chỉ có nghĩa là các câu trong bộ kiểm thử được xử lý đúng; nó không đảm bảo mọi cách diễn đạt của khách. Bộ câu do chính nhóm soạn nên có thiên lệch. Lớp AI tùy chọn chưa được thử với khóa thật.
-- **Ảnh sản phẩm chưa đầy đủ.** Khoảng 17/27 sản phẩm có ảnh thật; phần còn lại dùng SVG minh họa. Một số mẫu chưa có ảnh góc thứ hai.
+- **Ảnh sản phẩm chưa đầy đủ.** 20/27 sản phẩm có ảnh thật; phần còn lại dùng SVG minh họa. Một số mẫu chưa có ảnh góc thứ hai.
 - **Cron chưa quan sát ở giờ thật.** Workflow tổng hợp đã được chạy thủ công cả hai nhánh và đối chiếu kết quả; lịch 23:55 và 00:10 mới được rà cấu hình.
 - **Chưa kiểm thử nhiều instance.** Hệ thống chạy một backend; outbox và kho đã được kiểm thử với nhiều request đồng thời, nhưng chưa với nhiều tiến trình backend.
 - **Bảo mật chưa đủ cho sản xuất.** Dependency phát triển và image nền còn lỗ hổng được ghi nhận trong báo cáo kiểm thử và cần cập nhật trước khi đưa lên mạng công khai.

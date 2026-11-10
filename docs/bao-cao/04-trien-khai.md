@@ -41,8 +41,8 @@ docs/         Tài liệu, báo cáo kiểm thử, báo cáo đồ án
 | Workflow | Kích hoạt | Việc chính |
 |---|---|---|
 | 1. Messenger Chatbot | Webhook Meta (GET xác thực, POST nhận tin) | Xác thực token và chữ ký, bỏ echo, chống trùng `mid`, gọi API nội bộ, trả lời |
-| 2. Đơn hàng mới | Webhook từ outbox | Kiểm tra lại đơn, ghi Google Sheets, nhắn xác nhận nếu có PSID, email người bán |
-| 3. Cập nhật trạng thái | Webhook từ outbox | Cập nhật dòng trong Sheets, nhắn khách theo trạng thái, thông báo khi nhận thanh toán |
+| 2. Đơn hàng mới | Webhook từ outbox | Kiểm tra lại đơn, ghi Google Sheets, email người bán, email xác nhận cho khách nếu có email, nhắn xác nhận nếu có PSID |
+| 3. Cập nhật trạng thái | Webhook từ outbox | Cập nhật dòng trong Sheets, nhắn và email khách theo trạng thái, thông báo khi nhận thanh toán |
 | 4. Tổng hợp doanh thu | Lịch 23:55 hằng ngày và 00:10 ngày 1 hằng tháng | Ghi `Daily_Revenue` và `Monthly_Revenue`, gửi email báo cáo |
 | 5. Lỗi | Error Trigger | Ghi log và thông báo; không làm mất đơn |
 

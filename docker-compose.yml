@@ -107,6 +107,11 @@ services:
       GOOGLE_SHEET_ID: ${GOOGLE_SHEET_ID:-}
       MAIL_FROM: ${MAIL_FROM:-}
       MAIL_TO: ${MAIL_TO:-}
+      # Chỉ dùng lúc khởi động để nạp credential SMTP (start.sh xóa khỏi môi trường trước khi chạy n8n).
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
     depends_on:
       backend:
         condition: service_healthy
@@ -115,6 +120,8 @@ services:
     volumes:
       - n8n-data:/home/node/.n8n
       - integration-keys:/shared:ro
+      # File Service Account Google (secrets/google-service-account.json, không commit).
+      - ./secrets:/secrets:ro
     restart: unless-stopped
 
 volumes:

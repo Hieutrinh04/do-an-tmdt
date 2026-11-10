@@ -117,7 +117,13 @@
         0
       ],
       "notes": "Dùng credential SMTP và gửi nội dung HTML đã escape.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "credentials": {
+        "smtp": {
+          "id": "lfxSmtpGmail0001",
+          "name": "Long Fish Gmail SMTP"
+        }
+      }
     }
   ],
   "connections": {

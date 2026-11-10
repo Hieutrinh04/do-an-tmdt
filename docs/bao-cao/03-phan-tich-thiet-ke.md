@@ -18,6 +18,8 @@
 | FR-12 | Quản lý sản phẩm, phân loại, tồn kho, ảnh; cảnh báo tồn thấp | Người bán |
 | FR-13 | In phiếu đóng gói A6; xuất CSV đơn và doanh thu | Người bán |
 | FR-14 | Tổng hợp doanh thu định kỳ 23:55 hằng ngày và 00:10 đầu tháng | Hệ thống |
+| FR-15 | Khách để lại email (không bắt buộc) nhận email xác nhận đơn và thông báo trạng thái | Khách, hệ thống |
+| FR-16 | Trang sản phẩm hết hàng gợi ý mẫu cùng nhóm còn hàng | Khách |
 
 ## 3.2 Yêu cầu phi chức năng
 

@@ -13,7 +13,7 @@ Toàn bộ số liệu dưới đây lấy từ các lần chạy có ghi nhận
 | Kiểm tra phụ thuộc production | 0 lỗ hổng | `npm audit --omit=dev` |
 | Lighthouse mobile | Trang chủ 99/100/100/100; trang sản phẩm 98/100/100/100 | Lần đo cuối, xem 5.4 |
 | Đối soát WF4 | Ngày: 5 đơn, 357.000 đ; tháng 10: 7 đơn, 2.080.000 đ, 1 đơn hủy | Chạy thủ công hai nhánh, `docs/revenue-verification.json` |
-| Tích hợp (`check:integrations`) | DB, ảnh, n8n: OK; Messenger, Sheets, SMTP: **chưa kiểm chứng** | Thiếu token và credential thật |
+| Tích hợp (`check:integrations`, 10/11/2026) | **OK cả 6 mục:** DB, ảnh, n8n, Messenger, Google Sheets, SMTP | Kết nối tài khoản thật của chủ dự án, xem 5.6 |
 
 ## 5.2 Playwright
 
@@ -83,14 +83,21 @@ Bộ nhớ (`docs/resource-usage.json`): backend khoảng 136 MiB trên giới h
 - Docker Scout báo thêm lỗi ở image nền và thư viện đi kèm (backend 10 critical, 82 high; frontend 1 critical, 2 high). Đây là phạm vi rộng hơn `npm audit` và chưa được đối chiếu từng thành phần. **Chưa tuyên bố image sạch.**
 - Quét n8n bằng Scout dừng sau 8 phút và khoảng 2 GB RAM, chưa có kết quả.
 
-## 5.6 Những gì chưa kiểm chứng
+## 5.6 Kiểm chứng với dịch vụ thật (10/11/2026)
 
-- Facebook Page, webhook HTTPS và chữ ký Meta thật.
-- Google Sheets bằng Service Account thật; email bằng SMTP thật.
-- Chuyển khoản thật qua dịch vụ ngân hàng; webhook đối soát chỉ kiểm bằng request mô phỏng.
+Sau khi chủ dự án tạo tài khoản, hệ thống được chuyển sang `MOCK_INTEGRATIONS=false` trên máy cá nhân, công khai qua Cloudflare Tunnel tạm thời.
+
+| Dịch vụ | Đã kiểm chứng | Chưa kiểm chứng |
+|---|---|---|
+| Facebook Messenger | Ứng dụng Meta ở chế độ phát triển; Meta xác minh webhook thành công; token Trang hợp lệ, không hết hạn, có `pages_messaging`; đăng ký `messages`, `messaging_postbacks` | Chưa ghi nhận tin nhắn thật đầu tiên từ khách; chưa xét duyệt để mở cho mọi người dùng |
+| Google Sheets | Service Account đọc và ghi được; tạo 3 tab; workflow doanh thu ghi một dòng và chạy lại không nhân đôi | Chưa có đơn thật ghi vào `Long_Fish_Orders` |
+| Gmail SMTP | Đăng nhập bằng mật khẩu ứng dụng; Gmail trả `250 OK` cho 2 email báo cáo; người nhận xác nhận đã nhận | Email gửi khách mới kiểm bằng mock, chưa gửi thật |
+| HTTPS công khai | Website và n8n truy cập được qua `trycloudflare.com` | Địa chỉ tạm, đổi mỗi lần chạy lại; chưa có tên miền và máy chủ cố định |
+
+Còn lại:
+- Chuyển khoản thật qua dịch vụ ngân hàng; webhook đối soát chỉ kiểm bằng request mô phỏng. Chưa điền tài khoản VietQR.
 - Lịch cron 23:55 và 00:10 đúng giờ thật.
-- Ảnh thật: 17/27 sản phẩm (63%), thấp hơn mục tiêu 80%.
-- Triển khai HTTPS công khai (ACME, Cloudflare Tunnel) và smoke test từ Internet.
-- Đã chạy hôm nay: `docker compose up --build` trên project kiểm thử mới `long-fish-e2e-b6`, seed và health xanh. Chưa chạy trên máy chủ công khai.
+- Ảnh thật: 20/27 sản phẩm (74%), thấp hơn mục tiêu 80%.
+- Một đơn thật có kiểm soát từ Messenger tới Sheet, email và tin xác nhận.
 
-Các mục này được ghi trong [checklist bàn giao](../CHECKLIST-VIỆC-CỦA-TÔI.md) và cần thực hiện với tài khoản của chủ dự án.
+Các mục này được ghi trong [checklist bàn giao](../CHECKLIST-VIỆC-CỦA-TÔI.md).

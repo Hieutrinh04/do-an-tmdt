@@ -385,7 +385,13 @@
         0
       ],
       "notes": "Upsert theo code để chạy lại không tạo bản ghi trùng.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "credentials": {
+        "googleApi": {
+          "id": "lfxGoogleSheets1",
+          "name": "Long Fish Google Sheets"
+        }
+      }
     },
     {
       "parameters": {
@@ -613,7 +619,13 @@
       ],
       "onError": "continueRegularOutput",
       "notes": "Gửi email cho khách. Lỗi gửi (ví dụ địa chỉ sai) không chặn các bước sau.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "credentials": {
+        "smtp": {
+          "id": "lfxSmtpGmail0001",
+          "name": "Long Fish Gmail SMTP"
+        }
+      }
     }
   ],
   "connections": {
