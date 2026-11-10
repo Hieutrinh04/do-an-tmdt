@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from './db';
 import { isCatalogImage } from './image-path';
 import { HttpError, normalize, required } from './domain';
+import { unitPrices } from './commerce';
 
 const price = z.number().int().min(0).max(20_000_000);
 const slug = z.string().max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -16,13 +17,16 @@ export const careInfo = z.object({
   source: z.string().url().refine(value => value.startsWith('https://')).optional(),
 });
 const image = z.string().max(500).refine(isCatalogImage);
-const productFields = z.object({
+const productBase = z.object({
   name: required(120), slug, description: required(1500), price,
   images: z.array(image).min(1).max(6), category: required(80), isActive: z.boolean(),
   isLiveFish: z.boolean(), careInfo: careInfo.optional(),
+  // Giá khuyến mãi (nhỏ hơn giá gốc) và lịch áp dụng; để trống = không khuyến mãi.
+  salePrice: price.nullable().optional(),
+  saleStartsAt: z.coerce.date().nullable().optional(), saleEndsAt: z.coerce.date().nullable().optional(),
 });
-export const productPatch = productFields.partial();
-export const productInput = productFields.extend({ isActive: z.boolean().default(true), isLiveFish: z.boolean().default(false) });
+export const productPatch = productBase.partial();
+export const productInput = productBase.extend({ isActive: z.boolean().default(true), isLiveFish: z.boolean().default(false) });
 const variantFields = z.object({
   color: required(70), size: required(30), sku: required(80), stock: z.number().int().min(0).max(1_000_000),
   lowStockThreshold: z.number().int().min(0).max(1_000_000),
@@ -42,13 +46,13 @@ export async function products(search?: string, category?: string, maxPrice?: nu
   });
   const terms = normalize(search || '').split(' ').filter(Boolean);
   return all.filter(product => (!category || normalize(product.category) === normalize(category)) &&
-    terms.every(term => normalize([product.name, product.category, product.description].join(' ')).includes(term)));
+    terms.every(term => normalize([product.name, product.category, product.description].join(' ')).includes(term))).map(product => withPricing(product));
 }
 
 export async function detail(slug: string) {
   const product = await db.product.findFirst({ where: { slug, isActive: true }, include: { variants: publicVariants } });
   if (!product) throw new HttpError(404, 'Không tìm thấy sản phẩm.');
-  return product;
+  return withPricing(product);
 }
 
 export async function detailPage(slug: string) {
@@ -59,7 +63,11 @@ export async function detailPage(slug: string) {
     where: { isActive: true, category: product.category, id: { not: product.id } },
     include: { variants: publicVariants }, orderBy: { createdAt: 'asc' },
   })).filter(sellable).slice(0, 4).map(row => ({ id: row.id, name: row.name, slug: row.slug, price: row.price, images: row.images }));
-  return { ...product, alternatives };
+  const links = await db.productLink.findMany({ where: { productId: product.id }, include: { linked: { include: { variants: publicVariants } } } });
+  const linked = (type: string) => links.filter(link => link.type === type && link.linked.isActive && sellable(link.linked))
+    .map(link => withPricing(link.linked)).map(row => ({ id: row.id, name: row.name, slug: row.slug, price: row.price, currentPrice: row.currentPrice,
+      onSale: row.onSale, images: row.images, category: row.category, variants: row.variants }));
+  return { ...product, alternatives, crossSells: linked('CROSSSELL'), upSells: linked('UPSELL') };
 }
 
 export async function stock(id: string, color?: string, size?: string, gender?: string) {
@@ -82,3 +90,19 @@ export async function updateVariant(productId: string, id: string, data: Prisma.
   return db.productVariant.findUniqueOrThrow({ where: { id } });
 }
 
+
+// Giá hiện hành (đã tính khuyến mãi theo lịch) cho từng sản phẩm và phân loại, dùng chung giao diện, bot và SEO.
+type PricedVariant = { priceOverride: number | null };
+type Priceable<V extends PricedVariant> = { price: number; salePrice: number | null; saleStartsAt: Date | null; saleEndsAt: Date | null; variants: V[] };
+export function withPricing<T extends Priceable<PricedVariant>>(product: T, now = new Date()): Omit<T, 'variants'> & {
+  currentPrice: number; onSale: boolean; salePercent: number; variants: (T['variants'][number] & { unitPrice: number; regularPrice: number; onSale: boolean })[];
+} {
+  const base = unitPrices(product, null, now);
+  return {
+    ...product, currentPrice: base.unit, onSale: base.onSale, salePercent: base.onSale ? Math.round((1 - base.unit / base.regular) * 100) : 0,
+    variants: product.variants.map(variant => {
+      const price = unitPrices(product, variant, now);
+      return { ...variant, unitPrice: price.unit, regularPrice: price.regular, onSale: price.onSale };
+    }),
+  };
+}

@@ -32,7 +32,7 @@ function carousel(items: Product[], psid: string) {
       const image = Array.isArray(product.images) && typeof product.images[0] === 'string' ? product.images[0] : undefined;
       return {
         title: product.name.slice(0, 80),
-        subtitle: (money(product.price) + ' · ' + (product.variants.some(row => row.stock >= row.minQty) ? 'Còn hàng' : 'Hết hàng')).slice(0, 80),
+        subtitle: (money(product.currentPrice) + (product.onSale ? ' (giảm ' + product.salePercent + '%)' : '') + ' · ' + (product.variants.some(row => row.stock >= row.minQty) ? 'Còn hàng' : 'Hết hàng')).slice(0, 80),
         image_url: image ? new URL(thumbnailPath(image), env.PUBLIC_BASE_URL?.trim() || url).toString() : undefined,
         buttons: [{ type: 'web_url', title: 'Xem & đặt hàng', url }],
       };
@@ -78,7 +78,7 @@ function candidatesFrom(items: Product[], phrase: string, raw = '') {
     if (algae && !care?.algaeEater) return false;
     if (compact && !care?.compact) return false;
     if (smallTank && (!care || care.minTankLiters > 60 || care.adultCm > 7)) return false;
-    return item.variants.some(row => row.stock >= row.minQty && (row.priceOverride ?? item.price) * row.minQty <= limit);
+    return item.variants.some(row => row.stock >= row.minQty && row.unitPrice * row.minQty <= limit);
   });
 }
 
@@ -185,7 +185,7 @@ export async function handleMessage(input: z.infer<typeof inputSchema>) {
 
   if (product) {
     const next: Selection = selection.slug === product.slug ? { ...selection } : { slug: product.slug };
-    if (intent === 'price') return reply([text(product.name + ' · Giá niêm yết ' + money(product.price) + '. Giá theo phân loại được xác nhận ở trang đặt hàng.')], next);
+    if (intent === 'price') return reply([text(product.name + ' · Giá niêm yết ' + money(product.price) + (product.onSale ? ', đang giảm còn ' + money(product.currentPrice) : '') + '. Giá theo phân loại được xác nhận ở trang đặt hàng.')], next);
     if (intent === 'photo') return reply([carousel([product], psid), text('Ảnh tham khảo của ' + product.name + '. SVG trên website có nhãn Ảnh minh họa; chọn Xem & đặt hàng để xem nguồn ảnh.')], next);
     if (wantsCare) {
       const care = careInfo.safeParse(product.careInfo);

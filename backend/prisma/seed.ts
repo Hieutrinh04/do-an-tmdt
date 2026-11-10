@@ -17,6 +17,48 @@ const transitions: Record<OrderStatus, OrderStatus[]> = {
   CANCELLED: ['PENDING', 'CANCELLED'],
 };
 
+
+// Mã giảm giá mẫu theo yêu cầu đồ án: WELCOME10 (%), FREESHIP (miễn phí vận chuyển), SALE20 (số tiền cố định, theo danh mục, 1 lần/người).
+// Dữ liệu khuyến mãi theo lịch và sản phẩm mua kèm chỉ tạo lần đầu (khi chưa có WELCOME10) để không ghi đè chỉnh sửa của admin.
+async function seedCommerce(withProducts: boolean) {
+  const first = !(await db.coupon.findUnique({ where: { code: 'WELCOME10' } }));
+  const now = new Date();
+  const coupons = [
+    { code: 'WELCOME10', kind: 'PERCENT', value: 10, description: 'Giảm 10% cho đơn hàng đầu tiên (tặng khách đăng ký tài khoản mới).', minSubtotal: 0, categories: [], firstOrderOnly: true, perCustomerLimit: 1, expiresAt: null },
+    { code: 'FREESHIP', kind: 'FREESHIP', value: 0, description: 'Miễn phí vận chuyển cho đơn từ 300.000 ₫.', minSubtotal: 300000, categories: [], firstOrderOnly: false, perCustomerLimit: 0, expiresAt: addDays(now, 30) },
+    { code: 'SALE20', kind: 'FIXED', value: 20000, description: 'Giảm 20.000 ₫ cho sản phẩm thiết bị, mỗi khách dùng 1 lần.', minSubtotal: 0, categories: ['Thiết bị'], firstOrderOnly: false, perCustomerLimit: 1, expiresAt: null },
+  ];
+  for (const coupon of coupons) await db.coupon.upsert({ where: { code: coupon.code }, update: {}, create: coupon });
+  if (!first || !withProducts) return;
+
+  const sales: [string, number, number | null][] = [
+    ['betta-halfmoon', 59000, null], ['guppy-fancy', 24000, 14], ['be-kinh-40', 149000, 30], ['loc-thac', 199000, 30], ['ca-vang-ranchu', 129000, null],
+  ];
+  for (const [slug, salePrice, days] of sales) {
+    const product = await db.product.findUnique({ where: { slug } });
+    if (product && salePrice < product.price && product.salePrice == null) {
+      await db.product.update({ where: { id: product.id }, data: { salePrice, saleStartsAt: null, saleEndsAt: days ? addDays(now, days) : null } });
+    }
+  }
+  const links: Record<string, { CROSSSELL: string[]; UPSELL: string[] }> = {
+    'betta-halfmoon': { CROSSSELL: ['hat-betta', 'suoi-be-ca', 'vi-sinh', 'be-kinh-40'], UPSELL: ['betta-plakat-koi', 'betta-crowntail'] },
+    'guppy-fancy': { CROSSSELL: ['artemia-say', 'ray-nana', 'loc-thac'], UPSELL: ['guppy-full-red'] },
+    'neon-tetra': { CROSSSELL: ['ray-nana', 'den-led', 'vi-sinh'], UPSELL: ['cardinal-tetra'] },
+    'ca-vang-ranchu': { CROSSSELL: ['loc-thac', 'sui-oxy'], UPSELL: ['ca-vang-oranda'] },
+    'be-kinh-40': { CROSSSELL: ['loc-thac', 'den-led', 'suoi-be-ca', 'sui-oxy'], UPSELL: [] },
+  };
+  for (const [slug, groups] of Object.entries(links)) {
+    const product = await db.product.findUnique({ where: { slug } });
+    if (!product) continue;
+    for (const type of ['CROSSSELL', 'UPSELL'] as const) {
+      for (const linkedSlug of groups[type]) {
+        const linked = await db.product.findUnique({ where: { slug: linkedSlug } });
+        if (linked) await db.productLink.upsert({ where: { productId_linkedId_type: { productId: product.id, linkedId: linked.id, type } }, update: {}, create: { productId: product.id, linkedId: linked.id, type } });
+      }
+    }
+  }
+}
+
 export async function seed(replenish = false) {
   if (env.ADMIN_PASSWORD && (env.ADMIN_PASSWORD.length < 12 || Buffer.byteLength(env.ADMIN_PASSWORD) > 72)) {
     throw new Error('ADMIN_PASSWORD phải từ 12 ký tự đến tối đa 72 byte.');
@@ -31,7 +73,7 @@ export async function seed(replenish = false) {
       update: {},
     });
   }
-  if (env.SEED_DEMO === 'false') return;
+  if (env.SEED_DEMO === 'false') { await seedCommerce(false); return; }
 
   const variants: (ProductVariant & { product: Product })[] = [];
   for (const [name, slug, category, price, , first, second, size, minQty, careInfo] of fish) {
@@ -64,6 +106,8 @@ export async function seed(replenish = false) {
     });
     if (product.variants[0]) variants.push({ ...product.variants[0], product });
   }
+
+  await seedCommerce(true);
 
   await db.$transaction(async (tx) => {
     const existing = replenish ? await tx.order.findMany({ where: { OR: [

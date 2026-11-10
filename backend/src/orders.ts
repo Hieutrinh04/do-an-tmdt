@@ -3,28 +3,25 @@ import { z } from 'zod';
 import { db } from './db';
 import { trustedPsid } from './messenger';
 import { dayKey, mock } from './env';
-import { HttpError, nextStatus, orderDetails, orderInput, orderLines, paymentSandbox, qrUrl, quote, retryTransaction } from './domain';
+import { HttpError, nextStatus, orderDetails, orderInput, paymentSandbox, qrUrl, quote, retryTransaction } from './domain';
+import { evaluateCoupon, redeemCoupon, releaseCoupon, unitPrices } from './commerce';
+import { hashPassword, normalizeEmail, sendWelcomeEmail, strongPassword } from './accounts';
 
-export async function checkoutQuote(province: string, items: z.infer<typeof orderLines>) {
-  const variants = await db.productVariant.findMany({
-    where: { id: { in: items.map(item => item.variantId) }, isActive: true, product: { isActive: true } },
-    include: { product: true },
-  });
-  let subtotal = 0;
-  for (const item of items) {
-    const variant = variants.find(row => row.id === item.variantId);
-    if (!variant || variant.stock < item.quantity) throw new HttpError(409, 'Phân loại đã hết hoặc không đủ hàng.');
-    if (item.quantity < variant.minQty) throw new HttpError(422, 'Số lượng tối thiểu là ' + variant.minQty + ' ' + variant.unit + '.');
-    subtotal += (variant.priceOverride ?? variant.product.price) * item.quantity;
-  }
-  return quote(province, subtotal, variants.some(row => row.product.isLiveFish));
-}
-
-export async function createOrder(input: z.infer<typeof orderInput>) {
+export async function createOrder(input: z.infer<typeof orderInput>, customerId?: string) {
   if (input.paymentMethod === 'BANK_QR' && !qrUrl('CHECK', 0)) {
     throw new HttpError(503, 'Chuyển khoản đang tạm ngưng. Vui lòng chọn COD.');
   }
-  return retryTransaction(() => db.$transaction(async tx => {
+  // Tạo tài khoản cùng lúc đặt hàng: cần email hợp lệ, email chưa có tài khoản và mật khẩu đủ mạnh. Kiểm tra trước khi trừ kho.
+  let newAccount: { name: string; email: string; passwordHash: string } | undefined;
+  if (input.createAccount) {
+    if (!input.email) throw new HttpError(422, 'Cần nhập email để tạo tài khoản.');
+    const password = strongPassword.safeParse(input.createAccount.password);
+    if (!password.success) throw new HttpError(422, password.error.issues[0].message);
+    const email = normalizeEmail(input.email);
+    if (await db.customer.findUnique({ where: { email } })) throw new HttpError(409, 'Email này đã có tài khoản. Hãy đăng nhập để đặt hàng.');
+    newAccount = { name: input.customerName, email, passwordHash: await hashPassword(password.data) };
+  }
+  const result = await retryTransaction(() => db.$transaction(async tx => {
     const now = new Date();
     const day = dayKey(now).replaceAll('-', '');
     const sequence = await tx.orderSequence.upsert({
@@ -42,32 +39,54 @@ export async function createOrder(input: z.infer<typeof orderInput>) {
       lines.push({
         variantId: variant.id, productName: variant.product.name, color: variant.color, size: variant.size,
         gender: variant.gender, unit: variant.unit, category: variant.product.category, isLiveFish: variant.product.isLiveFish,
-        unitPrice: variant.priceOverride ?? variant.product.price, quantity: item.quantity,
+        unitPrice: unitPrices(variant.product, variant, now).unit, quantity: item.quantity,
       });
     }
     const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-    const { shippingFee, packingFee, total, hasLiveFish, liveDeliveryAvailable } =
-      quote(input.province, subtotal, lines.some(line => line.isLiveFish));
+    const base = quote(input.province, subtotal, lines.some(line => line.isLiveFish), input.shippingMethod);
+    const { hasLiveFish, liveDeliveryAvailable } = base;
     if (!liveDeliveryAvailable) throw new HttpError(422, 'Long Fish chưa giao cá sống đến tỉnh/thành này. Hãy bỏ cá sống khỏi giỏ để đặt phụ kiện.');
     if (hasLiveFish && !input.doaAccepted) throw new HttpError(422, 'Bạn cần xác nhận đã đọc chính sách cá sống (DOA).');
+    // Mã giảm giá luôn được kiểm tra lại ở máy chủ, trong cùng giao dịch với việc trừ kho.
+    let discount = 0;
+    let shippingDiscount = 0;
+    let couponId: string | undefined;
+    let couponCode = '';
+    if (input.couponCode) {
+      const applied = await evaluateCoupon(tx, input.couponCode, {
+        subtotal, lines: lines.map(line => ({ productId: line.variantId, category: line.category, lineTotal: line.unitPrice * line.quantity })),
+        baseShippingFee: base.baseShippingFee, now, customerId, phone: input.phone, email: input.email,
+      });
+      discount = applied.discount; shippingDiscount = applied.shippingDiscount; couponId = applied.coupon.id; couponCode = applied.coupon.code;
+    }
+    const shippingFee = Math.max(0, base.shippingFee - shippingDiscount);
+    const packingFee = base.packingFee;
+    const total = subtotal - discount + shippingFee + packingFee;
     if (total > 2_147_483_647) throw new HttpError(422, 'Giá trị đơn vượt giới hạn.');
+    let ownerId = customerId;
+    if (newAccount) ownerId = (await tx.customer.create({ data: { email: newAccount.email, name: newAccount.name, phone: input.phone, passwordHash: newAccount.passwordHash } })).id;
     const code = 'DH' + day + '-' + String(sequence.value).padStart(4, '0');
     const order = await tx.order.create({
       data: {
         code, customerName: input.customerName, phone: input.phone, email: input.email || '', psid: trustedPsid(input.psid, input.context),
-        address: [input.address, input.district, input.province].join(', '),
+        address: [input.address, input.ward, input.district, input.province].filter(Boolean).join(', '),
+        customerId: ownerId, couponCode, discount, shippingDiscount, shippingMethod: input.shippingMethod,
         note: input.note, paymentMethod: input.paymentMethod, subtotal, shippingFee, packingFee, total, hasLiveFish, doaAccepted: input.doaAccepted,
         preferredDelivery: input.preferredDelivery,
         createdAt: now, items: { create: lines }, history: { create: { toStatus: 'PENDING', changedAt: now } },
       },
       include: orderDetails,
     });
+    if (couponId) await redeemCoupon(tx, couponId, order.id, { customerId: ownerId, phone: input.phone, email: input.email });
     await tx.outboxEvent.create({ data: { kind: 'created', payload: { code, status: order.status } } });
     return {
-      code, total: order.total, subtotal, shippingFee, packingFee, hasLiveFish, items: order.items, paymentMethod: order.paymentMethod,
+      code, total: order.total, subtotal, discount, couponCode, shippingFee, shippingMethod: input.shippingMethod, packingFee, hasLiveFish, items: order.items, paymentMethod: order.paymentMethod,
+      customerName: input.customerName, phone: input.phone, email: input.email || '', address: order.address, accountCreated: !!newAccount,
       qrUrl: order.paymentMethod === 'BANK_QR' ? qrUrl(code, order.total) : undefined, mock, sandbox: paymentSandbox(),
     };
   }));
+  if (newAccount) void sendWelcomeEmail(newAccount).catch(error => console.warn('[Email] Không gửi được email chào mừng:', error instanceof Error ? error.message : error));
+  return result;
 }
 
 export async function changeStatus(id: string, status: OrderStatus, confirmCancellation: boolean) {
@@ -85,6 +104,7 @@ export async function changeStatus(id: string, status: OrderStatus, confirmCance
       for (const line of order.items) {
         await tx.productVariant.update({ where: { id: line.variantId }, data: { stock: { increment: line.quantity } } });
       }
+      await releaseCoupon(tx, id);
     }
     await tx.orderStatusLog.create({ data: { orderId: id, fromStatus: order.status, toStatus: status } });
     await tx.outboxEvent.create({ data: { kind: 'status', payload: { code: order.code, status } } });

@@ -1,5 +1,6 @@
 import { Router, Request } from 'express';
 import { db } from './db';
+import { unitPrices } from './commerce';
 import { env } from './env';
 import { clip, fitDescription, fitTitle, TITLE_MAX, DESCRIPTION_MIN, DESCRIPTION_MAX } from './seo-text';
 import { categories, categoryByName, categoryBySlug, pageBySlug, siteInfo, sitePages } from './site-content';
@@ -126,7 +127,7 @@ seo.get('/danh-muc/:slug', async (req, res) => {
   const name = shopName();
   const canonical = base + '/danh-muc/' + item.slug;
   const year = new Date().getFullYear();
-  const low = Math.min(...rows.flatMap(row => row.variants.map(variant => variant.priceOverride ?? row.price)));
+  const low = Math.min(...rows.flatMap(row => row.variants.map(variant => unitPrices(row, variant).unit)));
   sendHtml(res, render(await loadShell(), {
     title: fitTitle(item.name + ' — ' + name, [' | Hàng Mới ' + year, ' | Giá Tốt', '']),
     description: fitDescription('Mua ' + item.name + ' tại ' + name + ': ' + rows.length + ' sản phẩm, giá từ ' + money(low) + '. ' + item.description),
@@ -147,7 +148,7 @@ seo.get('/san-pham/:slug', async (req, res) => {
   if (!product || !product.variants.length) { res.status(404).end(); return; }
   const base = baseUrl(req);
   const name = shopName();
-  const prices = product.variants.map(row => row.priceOverride ?? product.price);
+  const prices = product.variants.map(row => unitPrices(product, row).unit);
   const low = Math.min(...prices);
   const high = Math.max(...prices);
   const inStock = product.variants.some(row => row.stock >= row.minQty);

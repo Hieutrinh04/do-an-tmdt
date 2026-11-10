@@ -44,14 +44,25 @@ const provinceKey = (value: string) => {
   return key === 'hcm' ? 'ho chi minh' : key;
 };
 
-export function quote(province: string, subtotal: number, hasLiveFish = false) {
+export type ShippingMethod = 'STANDARD' | 'EXPRESS';
+const expressSurcharge = () => { const value = Number(env.SHIPPING_EXPRESS_SURCHARGE); return Number.isFinite(value) && value >= 0 && env.SHIPPING_EXPRESS_SURCHARGE !== undefined && env.SHIPPING_EXPRESS_SURCHARGE !== '' ? Math.round(value) : 25000; };
+
+export function quote(province: string, subtotal: number, hasLiveFish = false, method: ShippingMethod = 'STANDARD') {
   const key = provinceKey(province);
   const entry = Object.entries(fees).find(([name]) => provinceKey(name) === key);
-  const shippingFee = subtotal >= freeThreshold ? 0 : entry?.[1] ?? defaultFee;
+  const regionFee = entry?.[1] ?? defaultFee;
+  // Giao tiêu chuẩn: phí theo tỉnh, miễn phí từ ngưỡng. Giao nhanh: phí theo tỉnh + phụ phí, không áp dụng miễn phí theo ngưỡng.
+  const standardFee = subtotal >= freeThreshold ? 0 : regionFee;
+  const expressFee = regionFee + expressSurcharge();
+  const methods = [
+    { id: 'STANDARD' as const, label: 'Giao tiêu chuẩn', description: 'Giao theo lịch nhân viên xác nhận', fee: standardFee },
+    { id: 'EXPRESS' as const, label: 'Giao nhanh', description: 'Ưu tiên đóng gói và bàn giao đơn vị vận chuyển sớm', fee: expressFee },
+  ];
+  const shippingFee = method === 'EXPRESS' ? expressFee : standardFee;
   const packingFee = hasLiveFish ? livePackingFee : 0;
   const liveDeliveryAvailable = !hasLiveFish || liveEverywhere || liveProvinces.some(name => provinceKey(name) === key);
-  return { subtotal, shippingFee, packingFee, total: subtotal + shippingFee + packingFee,
-    hasLiveFish, liveDeliveryAvailable, freeThreshold };
+  return { subtotal, shippingFee, baseShippingFee: standardFee, packingFee, total: subtotal + shippingFee + packingFee,
+    hasLiveFish, liveDeliveryAvailable, freeThreshold, shippingMethod: method, methods };
 }
 
 export const orderLines = z.array(z.object({
@@ -71,6 +82,11 @@ export const orderInput = z.object({
   paymentMethod: z.enum(['COD', 'BANK_QR']),
   preferredDelivery: z.string().datetime({ offset: true }).optional(),
   doaAccepted: z.boolean().default(false),
+  ward: clean(100).optional(),
+  shippingMethod: z.enum(['STANDARD', 'EXPRESS']).default('STANDARD'),
+  couponCode: clean(40).optional(),
+  // Tạo tài khoản ngay khi đặt hàng (cần email). Mật khẩu kiểm tra độ mạnh ở tầng tài khoản.
+  createAccount: z.object({ password: z.string().min(8).max(72) }).optional(),
   items: orderLines,
 });
 

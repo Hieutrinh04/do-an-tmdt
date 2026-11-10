@@ -42,7 +42,12 @@ model Product {
   careInfo    Json?
   isActive    Boolean          @default(true)
   createdAt   DateTime         @default(now())
+  salePrice    Int?
+  saleStartsAt DateTime?
+  saleEndsAt   DateTime?
   variants    ProductVariant[]
+  links       ProductLink[]    @relation("ProductLinkFrom")
+  linkedFrom  ProductLink[]    @relation("ProductLinkTo")
 
   @@index([isActive, category])
 }
@@ -88,9 +93,17 @@ model Order {
   note          String           @default("")
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
+  customerId    String?
+  customer      Customer?        @relation(fields: [customerId], references: [id])
+  couponCode    String           @default("")
+  discount      Int              @default(0)
+  shippingDiscount Int           @default(0)
+  shippingMethod String          @default("STANDARD")
   items         OrderItem[]
   history       OrderStatusLog[]
+  redemption    CouponRedemption?
 
+  @@index([customerId])
   @@index([createdAt, status])
   @@index([phone])
 }
@@ -183,4 +196,62 @@ model ContactMessage {
   createdAt DateTime @default(now())
 
   @@index([status, createdAt])
+}
+
+// Sản phẩm mua kèm (CROSSSELL) và sản phẩm đề xuất thay thế/nâng cấp (UPSELL).
+model ProductLink {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation("ProductLinkFrom", fields: [productId], references: [id])
+  linkedId  String
+  linked    Product @relation("ProductLinkTo", fields: [linkedId], references: [id])
+  type      String
+
+  @@unique([productId, linkedId, type])
+}
+
+model Customer {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String
+  phone            String    @default("")
+  passwordHash     String
+  shippingAddress  Json?
+  billingAddress   Json?
+  resetTokenHash   String?
+  resetExpiresAt   DateTime?
+  createdAt        DateTime  @default(now())
+  orders           Order[]
+}
+
+// kind: PERCENT (giảm % tiền hàng), FIXED (giảm số tiền cố định), FREESHIP (miễn phí vận chuyển).
+model Coupon {
+  id               String             @id @default(cuid())
+  code             String             @unique
+  kind             String
+  value            Int                @default(0)
+  description      String             @default("")
+  minSubtotal      Int                @default(0)
+  categories       Json
+  firstOrderOnly   Boolean            @default(false)
+  perCustomerLimit Int                @default(0)
+  usageLimit       Int                @default(0)
+  usedCount        Int                @default(0)
+  startsAt         DateTime?
+  expiresAt        DateTime?
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  redemptions      CouponRedemption[]
+}
+
+model CouponRedemption {
+  id          String   @id @default(cuid())
+  couponId    String
+  coupon      Coupon   @relation(fields: [couponId], references: [id])
+  orderId     String   @unique
+  order       Order    @relation(fields: [orderId], references: [id])
+  customerKey String
+  createdAt   DateTime @default(now())
+
+  @@index([couponId, customerKey])
 }

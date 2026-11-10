@@ -16,7 +16,10 @@ import { z } from 'zod';
 import { db } from './db';
 import { dayKey, dayStart, addDays, env } from './env';
 import { bankTransferAvailable, paymentSandbox, clean, date, doaPolicy, liveEverywhere, liveProvinces, orderLines, HttpError, orderDetails, orderInput, phone, provinces, psid, qrUrl, required, statusLabels } from './domain';
-import { changeStatus, checkoutQuote, createOrder, reconcileBankPayment, trackOrder, updatePayment } from './orders';
+import { changeStatus, createOrder, reconcileBankPayment, trackOrder, updatePayment } from './orders';
+import { couponKinds, normalizeCode, priceCart, quoteInput } from './commerce';
+import { addressInput, changePassword, currentCustomerId, customerIdFrom, finishPasswordReset, loginCustomer, publicCustomer, registerCustomer,
+  requireCustomer, sendWelcomeEmail, signCustomerToken, startPasswordReset, strongPassword, updateProfile } from './accounts';
 import { detail, detailPage, products, productInput, productPatch, removeVariant, stock, updateVariant, variantInput, variantPatch } from './catalog';
 import { overview, report } from './stats';
 import { uploadAdmin, uploadPublic, uploadedPhotoCredits } from './uploads';
@@ -87,6 +90,80 @@ export function createApp() {
     if (!page) throw new HttpError(404, 'Không tìm thấy trang.');
     res.set('Cache-Control', 'public, max-age=300').json({ ...page, title: fitTitle(page.title, []), description: fitDescription(page.description) });
   });
+
+  // ===== Tài khoản khách hàng (Dashboard, Đơn hàng, Địa chỉ, Chi tiết tài khoản, Đăng nhập/Đăng ký, Quên mật khẩu) =====
+  const accountLimit = rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false,
+    message: { message: 'Quá nhiều lần thử. Vui lòng thử lại sau ít phút.' } });
+  const noStore: RequestHandler = (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); };
+  api.use('/account', noStore);
+  api.post('/account/register', accountLimit, async (req, res) => {
+    const body = z.object({ name: required(100), email: z.string().trim().max(254).email('Email không hợp lệ.'), password: strongPassword, phone: z.string().trim().max(20).optional() }).parse(req.body);
+    const customer = await registerCustomer(body);
+    void sendWelcomeEmail(customer).catch(error => console.warn('[Email] Không gửi được email chào mừng:', error instanceof Error ? error.message : error));
+    res.status(201).json({ token: signCustomerToken(customer.id), customer: publicCustomer(customer) });
+  });
+  api.post('/account/login', accountLimit, async (req, res) => {
+    const body = z.object({ email: z.string().trim().max(254), password: z.string().min(1).max(200) }).parse(req.body);
+    const customer = await loginCustomer(body.email, body.password);
+    res.json({ token: signCustomerToken(customer.id), customer: publicCustomer(customer) });
+  });
+  api.post('/account/forgot', accountLimit, async (req, res) => {
+    const body = z.object({ email: z.string().trim().max(254).email('Email không hợp lệ.') }).parse(req.body);
+    await startPasswordReset(body.email).catch(error => console.warn('[Email] Không gửi được email đặt lại mật khẩu:', error instanceof Error ? error.message : error));
+    res.json({ ok: true, message: 'Nếu email đã đăng ký, chúng tôi đã gửi liên kết đặt lại mật khẩu.' });
+  });
+  api.post('/account/reset', accountLimit, async (req, res) => {
+    const body = z.object({ email: z.string().trim().max(254), token: z.string().regex(/^[a-f0-9]{64}$/), password: strongPassword }).parse(req.body);
+    const customer = await finishPasswordReset(body.email, body.token, body.password);
+    res.json({ token: signCustomerToken(customer.id), customer: publicCustomer(customer) });
+  });
+  api.get('/account/me', requireCustomer, async (req, res) => {
+    const customer = await db.customer.findUnique({ where: { id: currentCustomerId(req) } });
+    if (!customer) throw new HttpError(401, 'Phiên đăng nhập không còn hiệu lực.');
+    const recent = await db.order.findMany({ where: { customerId: customer.id }, orderBy: { createdAt: 'desc' }, take: 3, select: { code: true, createdAt: true, status: true, total: true } });
+    const orders = await db.order.count({ where: { customerId: customer.id } });
+    res.json({ ...publicCustomer(customer), orderCount: orders, recentOrders: recent });
+  });
+  api.patch('/account/me', requireCustomer, async (req, res) => {
+    const body = z.object({ name: required(100).optional(), phone: z.string().trim().max(20).optional(), email: z.string().trim().max(254).email('Email không hợp lệ.').optional(), currentPassword: z.string().max(200).optional() }).parse(req.body);
+    res.json(publicCustomer(await updateProfile(currentCustomerId(req), body)));
+  });
+  api.post('/account/password', requireCustomer, accountLimit, async (req, res) => {
+    const body = z.object({ currentPassword: z.string().min(1).max(200), newPassword: strongPassword }).parse(req.body);
+    await changePassword(currentCustomerId(req), body.currentPassword, body.newPassword);
+    res.json({ ok: true });
+  });
+  api.get('/account/addresses', requireCustomer, async (req, res) => {
+    const customer = await db.customer.findUniqueOrThrow({ where: { id: currentCustomerId(req) } });
+    res.json({ shippingAddress: customer.shippingAddress ?? null, billingAddress: customer.billingAddress ?? null });
+  });
+  api.put('/account/addresses', requireCustomer, async (req, res) => {
+    const body = z.object({ shippingAddress: addressInput.nullable().optional(), billingAddress: addressInput.nullable().optional() }).parse(req.body);
+    const data: { shippingAddress?: object | typeof Prisma.DbNull; billingAddress?: object | typeof Prisma.DbNull } = {};
+    if (body.shippingAddress !== undefined) data.shippingAddress = body.shippingAddress ?? Prisma.DbNull;
+    if (body.billingAddress !== undefined) data.billingAddress = body.billingAddress ?? Prisma.DbNull;
+    const customer = await db.customer.update({ where: { id: currentCustomerId(req) }, data });
+    res.json({ shippingAddress: customer.shippingAddress ?? null, billingAddress: customer.billingAddress ?? null });
+  });
+  api.get('/account/orders', requireCustomer, async (req, res) => {
+    const rows = await db.order.findMany({ where: { customerId: currentCustomerId(req) }, orderBy: { createdAt: 'desc' }, take: 100,
+      select: { code: true, createdAt: true, status: true, paymentStatus: true, paymentMethod: true, total: true, items: { select: { quantity: true } } } });
+    res.json(rows.map(row => ({ ...row, itemCount: row.items.reduce((sum, item) => sum + item.quantity, 0), items: undefined })));
+  });
+  api.get('/account/orders/:code', requireCustomer, async (req, res) => {
+    const order = await db.order.findFirst({ where: { code: code.parse(req.params.code), customerId: currentCustomerId(req) }, include: orderDetails });
+    if (!order) throw new HttpError(404, 'Không tìm thấy đơn hàng.');
+    res.json({ ...order, psid: undefined, internalNote: undefined });
+  });
+  // Khách chỉ tự hủy được đơn đang chờ xác nhận và chưa thanh toán; các trường hợp khác cần liên hệ cửa hàng.
+  api.post('/account/orders/:code/cancel', requireCustomer, async (req, res) => {
+    const order = await db.order.findFirst({ where: { code: code.parse(req.params.code), customerId: currentCustomerId(req) } });
+    if (!order) throw new HttpError(404, 'Không tìm thấy đơn hàng.');
+    if (order.status !== 'PENDING') throw new HttpError(409, 'Chỉ hủy được đơn đang chờ xác nhận. Vui lòng liên hệ cửa hàng.');
+    if (order.paymentStatus === 'PAID') throw new HttpError(409, 'Đơn đã thanh toán, vui lòng liên hệ cửa hàng để được hoàn tiền.');
+    const updated = await changeStatus(order.id, 'CANCELLED', false);
+    res.json({ code: updated.code, status: updated.status });
+  });
   // Biểu mẫu Liên hệ: lưu vào database cho admin xem. Ô "website" là bẫy chống bot: người thật không thấy và không điền.
   api.post('/contact', rateLimit({ windowMs: 10 * 60_000, limit: 5, standardHeaders: 'draft-8', legacyHeaders: false,
     message: { message: 'Bạn gửi quá nhiều tin nhắn. Vui lòng thử lại sau ít phút.' } }), async (req, res) => {
@@ -99,10 +176,10 @@ export function createApp() {
     res.status(201).json({ ok: true });
   });
   api.post('/shipping/quote', async (req, res) => {
-    const body = z.object({ province: required(100), items: orderLines }).parse(req.body);
-    res.json(await checkoutQuote(body.province, body.items));
+    const body = quoteInput.parse(req.body);
+    res.set('Cache-Control', 'no-store').json(await priceCart(body, customerIdFrom(req)));
   });
-  api.post('/orders', async (req, res) => { res.status(201).json(await createOrder(orderInput.parse(req.body))); });
+  api.post('/orders', async (req, res) => { res.status(201).json(await createOrder(orderInput.parse(req.body), customerIdFrom(req))); });
   api.get('/orders/track', trackLimit, async (req, res) => {
     const query = z.object({ code, phone }).parse(req.query);
     res.set('Cache-Control', 'no-store').json(await trackOrder(query.code, query.phone));
@@ -141,7 +218,7 @@ export function createApp() {
   api.get('/internal/orders/:code', async (req, res) => {
     const order = await db.order.findUnique({ where: { code: code.parse(req.params.code) }, include: orderDetails });
     if (!order || !order.items.length || order.subtotal !== order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
-        || order.total !== order.subtotal + order.shippingFee + order.packingFee) throw new HttpError(404, 'Đơn không tồn tại hoặc dữ liệu không hợp lệ.');
+        || order.total !== order.subtotal - order.discount + order.shippingFee + order.packingFee) throw new HttpError(404, 'Đơn không tồn tại hoặc dữ liệu không hợp lệ.');
     res.json({ ...order, doaPolicy, qrUrl: order.paymentMethod === 'BANK_QR' ? qrUrl(order.code, order.total) : undefined });
   });
   api.post('/internal/orders/track', async (req, res) => {
@@ -195,11 +272,64 @@ export function createApp() {
     }
     res.type('text/csv; charset=utf-8').attachment(`long-fish-${kind}-${from}-${to}.csv`).send(csvDocument(rows));
   });
+  // ===== Mã giảm giá =====
+  const couponBody = z.object({
+    code: z.string().trim().min(3).max(40).transform(normalizeCode), kind: z.enum(couponKinds), value: z.number().int().min(0).max(100_000_000).default(0),
+    description: z.string().trim().max(300).default(''), minSubtotal: z.number().int().min(0).default(0), categories: z.array(z.string().trim().min(1).max(80)).max(20).default([]),
+    firstOrderOnly: z.boolean().default(false), perCustomerLimit: z.number().int().min(0).max(1000).default(0), usageLimit: z.number().int().min(0).max(1_000_000).default(0),
+    startsAt: z.coerce.date().nullable().optional(), expiresAt: z.coerce.date().nullable().optional(), isActive: z.boolean().default(true),
+  }).superRefine((value, ctx) => {
+    if (value.kind === 'PERCENT' && (value.value < 1 || value.value > 100)) ctx.addIssue({ code: 'custom', path: ['value'], message: 'Phần trăm giảm từ 1 đến 100.' });
+    if (value.kind === 'FIXED' && value.value < 1) ctx.addIssue({ code: 'custom', path: ['value'], message: 'Số tiền giảm phải lớn hơn 0.' });
+    if (value.startsAt && value.expiresAt && value.startsAt > value.expiresAt) ctx.addIssue({ code: 'custom', path: ['expiresAt'], message: 'Ngày hết hạn phải sau ngày bắt đầu.' });
+  });
+  api.get('/admin/coupons', async (_req, res) => res.json(await db.coupon.findMany({ orderBy: { createdAt: 'desc' } })));
+  api.post('/admin/coupons', async (req, res) => {
+    const body = couponBody.parse(req.body);
+    if (await db.coupon.findUnique({ where: { code: body.code } })) throw new HttpError(409, 'Mã này đã tồn tại.');
+    res.status(201).json(await db.coupon.create({ data: body }));
+  });
+  api.patch('/admin/coupons/:id', async (req, res) => {
+    const current = await db.coupon.findUniqueOrThrow({ where: { id: id.parse(req.params.id) } });
+    const body = couponBody.parse({ ...current, startsAt: current.startsAt, expiresAt: current.expiresAt, ...(req.body as object) });
+    if (body.code !== current.code && await db.coupon.findUnique({ where: { code: body.code } })) throw new HttpError(409, 'Mã này đã tồn tại.');
+    res.json(await db.coupon.update({ where: { id: current.id }, data: body }));
+  });
+  api.get('/admin/products/:id/links', async (req, res) => {
+    const links = await db.productLink.findMany({ where: { productId: id.parse(req.params.id) }, include: { linked: { select: { slug: true, name: true } } } });
+    res.json(links.map(link => ({ type: link.type, slug: link.linked.slug, name: link.linked.name })));
+  });
+  // Đặt lại toàn bộ sản phẩm mua kèm (CROSSSELL) và đề xuất thay thế (UPSELL) của một sản phẩm theo danh sách slug.
+  api.put('/admin/products/:id/links', async (req, res) => {
+    const productId = id.parse(req.params.id);
+    const body = z.object({ CROSSSELL: z.array(z.string()).max(12).default([]), UPSELL: z.array(z.string()).max(12).default([]) }).parse(req.body);
+    const slugs = [...new Set([...body.CROSSSELL, ...body.UPSELL])];
+    const found = await db.product.findMany({ where: { slug: { in: slugs }, id: { not: productId } }, select: { id: true, slug: true } });
+    const missing = slugs.filter(slug => !found.some(row => row.slug === slug));
+    if (missing.length) throw new HttpError(422, 'Không tìm thấy sản phẩm: ' + missing.join(', '));
+    await db.$transaction([
+      db.productLink.deleteMany({ where: { productId } }),
+      db.productLink.createMany({ data: (['CROSSSELL', 'UPSELL'] as const).flatMap(type => body[type].map(slug => ({ productId, linkedId: found.find(row => row.slug === slug)!.id, type }))) }),
+    ]);
+    res.json({ ok: true });
+  });
   api.get('/admin/products', async (_req, res) => res.json(await db.product.findMany({ include: { variants: true }, orderBy: { createdAt: 'desc' } })));
-  api.post('/admin/products', async (req, res) => res.status(201).json(await db.product.create({ data: productInput.parse(req.body) })));
-  api.patch('/admin/products/:id', async (req, res) => res.json(await db.product.update({
-    where: { id: id.parse(req.params.id) }, data: productPatch.parse(req.body),
-  })));
+  const checkSale = (price: number | undefined, salePrice: number | null | undefined, starts?: Date | null, ends?: Date | null) => {
+    if (salePrice != null && price != null && salePrice >= price) throw new HttpError(422, 'Giá khuyến mãi phải nhỏ hơn giá gốc.');
+    if (starts && ends && starts > ends) throw new HttpError(422, 'Ngày kết thúc khuyến mãi phải sau ngày bắt đầu.');
+  };
+  api.post('/admin/products', async (req, res) => {
+    const data = productInput.parse(req.body);
+    checkSale(data.price, data.salePrice, data.saleStartsAt, data.saleEndsAt);
+    res.status(201).json(await db.product.create({ data }));
+  });
+  api.patch('/admin/products/:id', async (req, res) => {
+    const data = productPatch.parse(req.body);
+    const current = await db.product.findUniqueOrThrow({ where: { id: id.parse(req.params.id) } });
+    checkSale(data.price ?? current.price, data.salePrice !== undefined ? data.salePrice : current.salePrice,
+      data.saleStartsAt !== undefined ? data.saleStartsAt : current.saleStartsAt, data.saleEndsAt !== undefined ? data.saleEndsAt : current.saleEndsAt);
+    res.json(await db.product.update({ where: { id: current.id }, data }));
+  });
   api.delete('/admin/products/:id', async (req, res) => {
     await db.product.update({ where: { id: id.parse(req.params.id) }, data: { isActive: false } });
     res.sendStatus(204);
