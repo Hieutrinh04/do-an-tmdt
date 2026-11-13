@@ -194,45 +194,61 @@ export async function handleMessage(input: z.infer<typeof inputSchema>) {
       return reply([text(product.name + ' · Thông số tham khảo\nNhiệt độ: ' + info.temperature + ' · pH: ' + info.ph +
         '\nBể tham khảo: từ ' + info.minTankLiters + ' L, tùy số cá và bố trí.\n' + info.temperament + '\nThức ăn: ' + info.food)], next);
     }
-    const available = product.variants.filter(row => row.stock >= row.minQty);
-    const alternatives = () => {
+    // Chỉ gợi ý những lựa chọn còn bán được; tự chọn khi chỉ còn một khả năng để khách không phải bấm lại từng bước.
+    const sellable = (row: Product['variants'][number]) => row.stock >= row.minQty;
+    const available = product.variants.filter(sellable);
+    const unique = (values: string[]) => [...new Set(values)];
+    const label = (row: Product['variants'][number]) => row.color + ' / ' + row.size + ' / ' + row.gender;
+    const alternatives = (lead = 'Lựa chọn này đã hết hoặc dưới lượng bán tối thiểu.') => {
       if (available.length) {
-        const values = available.slice(0, 4).map(row => row.color + ' / ' + row.size + ' / ' + row.gender).join('\n');
-        return reply([text('Lựa chọn này đã hết hoặc dưới lượng bán tối thiểu. Phân loại còn bán:\n' + values,
-          [...new Set(available.map(row => row.color))].concat(choices))], { slug: product.slug });
+        const options = available.slice(0, 10);
+        return reply([text(lead + ' Phân loại còn bán, bạn bấm chọn luôn:\n' + options.map(label).join('\n'),
+          options.map(label).concat(['Gặp nhân viên']))], { slug: product.slug });
       }
       const similar = catalog.filter(row => row.id !== product.id && row.category === product.category &&
         row.variants.some(variant => variant.stock >= variant.minQty));
       return similar.length ? present(similar, 'Mẫu này đã hết. Bạn có thể xem các mẫu cùng nhóm:') :
         reply([text('Mẫu này đã hết. Chọn Gặp nhân viên để hỏi lịch về hàng.')]);
     };
-    const colors = [...new Set(product.variants.map(row => row.color))];
-    const color = colors.find(value => phrase === normalize(value) || phrase === 'mau ' + normalize(value));
+    // Khách bấm hoặc gõ nguyên phân loại "Mix / 3–4 cm / Đực" (nút Messenger cắt tiêu đề còn 20 ký tự nên chấp nhận phần đầu).
+    const combo = phrase.length >= 5 ? product.variants.find(row => {
+      const full = customerPhrase(label(row));
+      return full === phrase || (phrase.length >= 12 && full.startsWith(phrase));
+    }) : undefined;
+    if (combo) { next.color = combo.color; next.size = combo.size; next.gender = combo.gender; }
+    const colors = unique(product.variants.map(row => row.color));
+    const color = combo ? undefined : colors.find(value => phrase === normalize(value) || phrase === 'mau ' + normalize(value));
     if (color && next.color !== color) { next.color = color; delete next.size; delete next.gender; }
-    const colorRows = product.variants.filter(row => row.color === next.color);
-    const sizes = [...new Set(colorRows.map(row => row.size))];
-    const size = sizes.find(value => phrase === normalize(value) || phrase === 'co ' + normalize(value));
+    const openColors = unique(available.map(row => row.color));
+    if (!next.color && openColors.length === 1) next.color = openColors[0];
+    const sizes = unique(product.variants.filter(row => row.color === next.color).map(row => row.size));
+    const size = combo ? undefined : sizes.find(value => phrase === normalize(value) || phrase === 'co ' + normalize(value));
     if (size && next.size !== size) { next.size = size; delete next.gender; }
-    const sizeRows = colorRows.filter(row => row.size === next.size);
-    const genders = [...new Set(sizeRows.map(row => row.gender))];
-    const gender = genders.find(value => phrase === normalize(value) || phrase === 'gioi tinh ' + normalize(value));
+    const openSizes = unique(available.filter(row => row.color === next.color).map(row => row.size));
+    if (next.color && !next.size && openSizes.length === 1) next.size = openSizes[0];
+    const genders = unique(product.variants.filter(row => row.color === next.color && row.size === next.size).map(row => row.gender));
+    const gender = combo ? undefined : genders.find(value => phrase === normalize(value) || phrase === 'gioi tinh ' + normalize(value));
     if (gender) next.gender = gender;
-    const quantity = next.gender && /^\d{1,2}$/.test(phrase) ? Number(phrase) : 0;
+    const openGenders = unique(available.filter(row => row.color === next.color && row.size === next.size).map(row => row.gender));
+    if (next.size && !next.gender && openGenders.length === 1) next.gender = openGenders[0];
+    const quantity = next.gender && !combo && !explicit && !picked && /^\d{1,2}$/.test(phrase) ? Number(phrase) : 0;
     if (wantsStock) {
       const inventory = await stock(product.id, next.color, next.size, next.gender);
       if (!inventory.inStock) return alternatives();
-      return reply([text(product.name + ' còn ' + inventory.stock + ' đơn vị theo lựa chọn. Chọn dòng/màu để kiểm tra cụ thể.', colors.concat(choices))], next);
+      return reply([text(product.name + ' còn ' + inventory.stock + ' đơn vị theo lựa chọn. Chọn dòng/màu để kiểm tra cụ thể.', openColors.concat(choices))], next);
     }
     if (!available.length) return alternatives();
-    if (!explicit && !picked && !wantsSelection && !color && !size && !gender && !quantity) {
+    if (!explicit && !picked && !wantsSelection && !combo && !color && !size && !gender && !quantity) {
       if (state.unknownCount >= 1) return handoff('Bot chưa hiểu hai tin liên tiếp');
       return reply([text('Bạn thử chọn dòng/màu, cỡ, giới tính hoặc số lượng theo gợi ý nhé.')], next, 1);
     }
-    if (!next.color) return reply([text('Bạn chọn dòng/màu của ' + product.name + ' nhé.', colors.concat(choices))], next);
-    if (!next.size) return reply([text('Bạn chọn cỡ cho màu ' + next.color + '.', sizes.concat(choices))], next);
-    if (!next.gender) return reply([text('Bạn chọn giới tính cho phân loại này.', genders.concat(choices))], next);
-    const variant = sizeRows.find(row => row.gender === next.gender);
-    if (!variant || variant.stock < variant.minQty) return alternatives();
+    if (next.color && !openSizes.length) return alternatives('Màu ' + next.color + ' đã hết.');
+    if (next.size && !openGenders.length) return alternatives(next.color + ' / ' + next.size + ' đã hết.');
+    if (!next.color) return reply([text('Bạn chọn dòng/màu của ' + product.name + ' nhé.', openColors.concat(choices))], next);
+    if (!next.size) return reply([text(product.name + ' · ' + next.color + '. Bạn chọn cỡ nhé.', openSizes.concat(choices))], next);
+    if (!next.gender) return reply([text(product.name + ' · ' + next.color + ' / ' + next.size + '. Bạn chọn giới tính nhé.', openGenders.concat(choices))], next);
+    const variant = available.find(row => row.color === next.color && row.size === next.size && row.gender === next.gender);
+    if (!variant) return alternatives(label({ ...product.variants[0], color: next.color, size: next.size, gender: next.gender }) + ' đã hết.');
     if (quantity < variant.minQty || quantity > variant.stock) return reply([text('Mua tối thiểu ' + variant.minQty +
       ' ' + variant.unit + ', hiện còn ' + variant.stock + '. Bạn muốn đặt bao nhiêu?',
       Array.from({ length: Math.min(5, variant.stock - variant.minQty + 1, 100 - variant.minQty) },

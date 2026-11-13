@@ -109,12 +109,21 @@ function StoreLayout() {
       <Route path="/chinh-sach-doi-tra" element={<ContentPage slug="chinh-sach-doi-tra" />} /><Route path="/chinh-sach-bao-mat" element={<ContentPage slug="chinh-sach-bao-mat" />} />
       <Route path="/chinh-sach-van-chuyen" element={<ContentPage slug="chinh-sach-van-chuyen" />} />
       <Route path="/gio-hang" element={<CartPage />} /><Route path="/tai-khoan/quen-mat-khau" element={<ForgotPassword />} /><Route path="/tai-khoan/dat-lai-mat-khau" element={<ResetPassword />} /><Route path="/tai-khoan/*" element={<AccountPage />} /><Route path="/checkout" element={<Checkout />} /><Route path="/confirmation" element={<Confirm />} /><Route path="/track" element={<Track />} />
-      <Route path="/admin/*" element={<Suspense fallback={<p className="shell section">Đang tải quản trị…</p>}><Admin /></Suspense>} /><Route path="*" element={<section className="shell section"><h1>Không tìm thấy trang</h1><Link to="/">Về cửa hàng</Link></section>} />
+      <Route path="*" element={<section className="shell not-found"><p className="eyebrow">Lỗi 404</p><h1>Không tìm thấy trang</h1><p>Đường dẫn có thể đã đổi hoặc sản phẩm đã ngừng bán. Bạn thử tìm sản phẩm khác nhé.</p><div className="actions"><Link className="button" to="/#san-pham">Xem tất cả sản phẩm</Link><Link className="outline" to="/lien-he">Liên hệ Long Fish</Link></div></section>} />
     </Routes></Suspense></main>
     <Footer />
   </>;
 }
 
-createRoot(document.getElementById('root')!).render(<BrowserRouter><StoreLayout /></BrowserRouter>);
+// Trang quản trị dùng khung riêng toàn màn hình, không có header/footer của cửa hàng.
+function App() {
+  const { pathname } = useLocation();
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return <Suspense fallback={<p className="shell section" role="status">Đang tải quản trị…</p>}><Admin /></Suspense>;
+  }
+  return <StoreLayout />;
+}
+
+createRoot(document.getElementById('root')!).render(<BrowserRouter><App /></BrowserRouter>);
 
 

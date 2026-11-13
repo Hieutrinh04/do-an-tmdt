@@ -1,6 +1,6 @@
 # Chức năng thương mại – đối chiếu Phần D của hướng dẫn đồ án
 
-File hướng dẫn viết cho WooCommerce; dự án này là ứng dụng React + Node riêng nên mỗi mục được thực hiện bằng mã tương ứng. Kiểm chứng: 177 test backend (`npm test`), Playwright (`npm run test:ui`), `docs/seo-audit.json`.
+File hướng dẫn viết cho WooCommerce; dự án này là ứng dụng React + Node riêng nên mỗi mục được thực hiện bằng mã tương ứng. Kiểm chứng: 178 test backend (`npm test`), Playwright (`npm run test:ui`), `docs/seo-audit.json`.
 
 ## D1. Sản phẩm & kho hàng
 
@@ -74,6 +74,19 @@ Logo email: `/logo-email.png`. Cần `SITE_URL` là địa chỉ công khai thì
 - Admin có mục **Mã giảm giá**: xem lượt dùng, tạo mã mới (loại %, số tiền, miễn phí ship; đơn tối thiểu; danh mục; giới hạn mỗi khách và tổng lượt; ngày bắt đầu/hết hạn; đơn đầu tiên), bật/tắt.
 - Máy chủ **luôn kiểm tra lại mã khi tạo đơn**, trong cùng giao dịch với việc trừ kho; chống dùng quá giới hạn khi nhiều người đặt cùng lúc (có test 4 đơn song song, chỉ 1 đơn thành công); hủy đơn trả lại lượt dùng.
 - **Báo cáo** (admin → Tổng quan): số đơn theo trạng thái, doanh thu ngày/tháng, sản phẩm bán chạy, doanh thu theo danh mục; **Sản phẩm** hiển thị tồn kho từng phân loại và cảnh báo tồn thấp; xuất CSV đơn và doanh thu.
+
+## Trang quản trị (`/admin`)
+
+Khung riêng toàn màn hình (không dùng header/footer cửa hàng), thanh bên có số đếm: đơn chờ xác nhận, phân loại sắp hết, yêu cầu hỗ trợ chưa xử lý.
+
+| Mục | Chức năng |
+|---|---|
+| Tổng quan | "Bể chia ngăn" đếm đơn theo bước (bấm để lọc), doanh thu hôm nay/tháng, số đơn, giá trị trung bình, tỉ lệ hủy, biểu đồ 30 ngày và 12 tháng, đơn mới nhất, sắp hết hàng, bán chạy, doanh thu theo danh mục, chọn khoảng ngày |
+| Đơn hàng | Lọc theo trạng thái (thẻ có số đếm), tìm theo mã/SĐT/tên/email, lọc thêm ngày đặt, ngày giao, thanh toán; nút chuyển bước nhanh trên từng dòng; ngăn chi tiết có tiến trình, xác nhận/giao/hủy, ghi nhận thanh toán, ghi chú nội bộ, in phiếu A6, lịch sử; xuất CSV |
+| Sản phẩm & kho | Bảng có ảnh, giá sale, thanh tồn kho theo phân loại; lọc cá sống / đang giảm giá / đang ẩn / sắp hết, theo danh mục, tìm theo tên/slug/SKU; ngăn chi tiết sửa tồn kho ngay trong bảng, sửa/thêm phân loại, sửa thông tin, giá, khuyến mãi, ảnh, sản phẩm liên quan |
+| Mã giảm giá | Thẻ dạng vé: giá trị, điều kiện, thời hạn, thanh lượt dùng, trạng thái (đang chạy/chưa bắt đầu/hết hạn/hết lượt), bật/tắt, **sửa** và tạo mã |
+| Khách hàng | Gộp theo tài khoản hoặc SĐT (kể cả khách không tạo tài khoản): số đơn, đã chi, đơn gần nhất; lọc có tài khoản / khách quay lại; sắp xếp theo chi tiêu, số đơn (`GET /api/admin/customers`) |
+| Hỗ trợ | Messenger cần người thật và tin từ trang Liên hệ, mỗi loại một thẻ; trả lời qua email, bật lại bot |
 
 ## Chưa làm / chưa kiểm chứng
 

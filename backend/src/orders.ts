@@ -107,6 +107,11 @@ export async function changeStatus(id: string, status: OrderStatus, confirmCance
       await releaseCoupon(tx, id);
     }
     await tx.orderStatusLog.create({ data: { orderId: id, fromStatus: order.status, toStatus: status } });
+    // Đơn COD giao xong nghĩa là đã thu tiền mặt.
+    if (status === 'DELIVERED' && order.paymentMethod === 'COD' && order.paymentStatus === 'UNPAID') {
+      await tx.order.update({ where: { id }, data: { paymentStatus: 'PAID' } });
+      await tx.orderStatusLog.create({ data: { orderId: id, fromStatus: status, toStatus: status, action: 'payment', detail: 'Đã thu tiền COD khi giao' } });
+    }
     await tx.outboxEvent.create({ data: { kind: 'status', payload: { code: order.code, status } } });
     return tx.order.findUniqueOrThrow({ where: { id }, include: orderDetails });
   }));
@@ -123,7 +128,7 @@ export async function updatePayment(id: string) {
       if (result.count) await tx.outboxEvent.create({
       data: { kind: 'payment', payload: { code: order.code, status: order.status, notify: false } },
     });
-    return order;
+    return tx.order.findUniqueOrThrow({ where: { id }, include: orderDetails });
   }));
 }
 

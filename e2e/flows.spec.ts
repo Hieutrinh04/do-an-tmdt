@@ -192,10 +192,10 @@ test('phiếu A6 chỉ hiện khi in', async ({ page, request }) => {
   await page.getByLabel('Tên đăng nhập').fill(username);
   await page.getByLabel('Mật khẩu').fill(password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page.getByRole('heading', { name: 'Tổng quan doanh thu' })).toBeVisible();
-  await page.getByRole('link', { name: 'Đơn hàng', exact: true }).click();
-  await page.getByLabel('Mã đơn / điện thoại').fill(code);
-  await page.getByLabel('Mã đơn / điện thoại').press('Enter');
+  await expect(page.getByRole('heading', { name: /^Chào buổi/ })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Quản trị' }).getByRole('link', { name: /^Đơn hàng/ }).click();
+  await page.getByLabel('Tìm trong đơn hàng').fill(code);
+  await page.getByLabel('Tìm trong đơn hàng').press('Enter');
   await page.getByRole('button', { name: code, exact: true }).click();
 
   const label = page.locator('article.packing-label');

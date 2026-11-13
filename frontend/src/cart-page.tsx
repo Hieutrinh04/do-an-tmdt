@@ -74,7 +74,8 @@ export function CartPage() {
             {quote && quote.discount > 0 && <><span>Mã giảm giá {quote.coupon?.code}</span><span className="success">-{money(quote.discount)}</span></>}
             {quote && quote.shippingDiscount > 0 && <><span>Miễn phí vận chuyển ({quote.coupon?.code})</span><span className="success">-{money(quote.shippingDiscount)}</span></>}
             {quote && quote.packingFee > 0 && <><span>Đóng gói cá sống</span><span>{money(quote.packingFee)}</span></>}
-            <strong>Tổng cộng</strong><strong>{quote && (province.trim() || !hasLiveFish) ? money(quote.total) : money(subtotal)}</strong>
+            {province.trim() && quote ? <><strong>Tổng cộng</strong><strong>{money(quote.total)}</strong></> :
+              <><strong>Tạm tính <small>(chưa gồm phí giao)</small></strong><strong>{money(quote ? quote.subtotal - quote.discount + quote.packingFee : subtotal)}</strong></>}
           </div>
           {quote && free > 0 && !quote.coupon?.kind.includes('FREESHIP') && <small>Mua thêm {money(free)} để được miễn phí vận chuyển tiêu chuẩn.</small>}
           {quote && !quote.liveDeliveryAvailable && <p role="alert" className="error">Long Fish chưa giao cá sống đến tỉnh/thành này. Bạn có thể đặt phụ kiện.</p>}

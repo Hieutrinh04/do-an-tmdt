@@ -254,9 +254,51 @@ export function createApp() {
   api.use('/admin', admin);
   api.use('/admin', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   api.use('/admin/uploads', rateLimit({ windowMs: 60_000, limit: 30 }), uploadAdmin);
+  // Số liệu cho thanh bên và cảnh báo của trang quản trị: đơn chờ, số đơn theo trạng thái, yêu cầu hỗ trợ, liên hệ mới, tồn thấp.
   api.get('/admin/orders/summary', async (_req, res) => {
-    const [pending, latest] = await Promise.all([db.order.count({ where: { status: 'PENDING' } }), db.order.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } })]);
-    res.json({ pending, latestId: latest?.id || '' });
+    const [pending, latest, grouped, openHandoffs, newContacts, variants] = await Promise.all([
+      db.order.count({ where: { status: 'PENDING' } }),
+      db.order.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+      db.order.groupBy({ by: ['status'], _count: { _all: true } }),
+      db.handoffRequest.count({ where: { status: 'OPEN' } }),
+      db.contactMessage.count({ where: { status: 'NEW' } }),
+      db.productVariant.findMany({ where: { isActive: true, product: { isActive: true } },
+        select: { id: true, sku: true, color: true, size: true, unit: true, stock: true, lowStockThreshold: true, product: { select: { id: true, name: true, slug: true } } } }),
+    ]);
+    const lowStock = variants.filter(row => row.stock <= row.lowStockThreshold).sort((a, b) => a.stock - b.stock);
+    res.json({ pending, latestId: latest?.id || '', openHandoffs, newContacts, lowStockCount: lowStock.length, lowStock: lowStock.slice(0, 12),
+      statusCounts: Object.fromEntries(grouped.map(row => [row.status, row._count._all])) });
+  });
+  // Khách hàng: gộp theo tài khoản (nếu có) hoặc số điện thoại, kể cả khách đặt không cần tài khoản.
+  api.get('/admin/customers', async (req, res) => {
+    const { q } = z.object({ q: clean(100).optional() }).parse(req.query);
+    const [orders, accounts] = await Promise.all([
+      db.order.findMany({ orderBy: { createdAt: 'desc' }, take: 20000,
+        select: { code: true, customerName: true, phone: true, email: true, total: true, status: true, createdAt: true, customerId: true } }),
+      db.customer.findMany({ select: { id: true, email: true, name: true, phone: true, createdAt: true } }),
+    ]);
+    type Row = { key: string; name: string; phone: string; email: string; hasAccount: boolean; accountCreatedAt: Date | null; orders: number; delivered: number;
+      cancelled: number; open: number; spent: number; lastOrderAt: Date | null; lastCode: string };
+    const rows = new Map<string, Row>();
+    const account = new Map(accounts.map(row => [row.id, row]));
+    for (const order of orders) {
+      const key = order.customerId ? 'c:' + order.customerId : 'p:' + order.phone;
+      const owner = order.customerId ? account.get(order.customerId) : undefined;
+      const row = rows.get(key) ?? { key, name: owner?.name || order.customerName, phone: owner?.phone || order.phone, email: owner?.email || order.email,
+        hasAccount: !!owner, accountCreatedAt: owner?.createdAt ?? null, orders: 0, delivered: 0, cancelled: 0, open: 0, spent: 0, lastOrderAt: order.createdAt, lastCode: order.code };
+      row.orders++;
+      if (!row.email && order.email) row.email = order.email;
+      if (order.status === 'DELIVERED') { row.delivered++; row.spent += order.total; }
+      else if (order.status === 'CANCELLED') row.cancelled++;
+      else row.open++;
+      rows.set(key, row);
+    }
+    for (const owner of accounts) if (!rows.has('c:' + owner.id)) rows.set('c:' + owner.id, { key: 'c:' + owner.id, name: owner.name, phone: owner.phone, email: owner.email,
+      hasAccount: true, accountCreatedAt: owner.createdAt, orders: 0, delivered: 0, cancelled: 0, open: 0, spent: 0, lastOrderAt: null, lastCode: '' });
+    const needle = q?.toLowerCase();
+    const list = [...rows.values()].filter(row => !needle || [row.name, row.phone, row.email].some(value => value.toLowerCase().includes(needle)))
+      .sort((a, b) => +(b.lastOrderAt ?? b.accountCreatedAt ?? 0) - +(a.lastOrderAt ?? a.accountCreatedAt ?? 0));
+    res.json({ total: list.length, accounts: accounts.length, customers: list.slice(0, 500) });
   });
   api.get('/admin/exports/:kind', async (req, res) => {
     const kind = z.enum(['orders', 'revenue']).parse(req.params.kind);
@@ -330,8 +372,21 @@ export function createApp() {
       data.saleStartsAt !== undefined ? data.saleStartsAt : current.saleStartsAt, data.saleEndsAt !== undefined ? data.saleEndsAt : current.saleEndsAt);
     res.json(await db.product.update({ where: { id: current.id }, data }));
   });
+  // Mặc định là ẩn khỏi cửa hàng. ?permanent=1: xóa hẳn, chỉ khi sản phẩm chưa từng có trong đơn hàng (giữ lịch sử đơn).
   api.delete('/admin/products/:id', async (req, res) => {
-    await db.product.update({ where: { id: id.parse(req.params.id) }, data: { isActive: false } });
+    const productId = id.parse(req.params.id);
+    if (req.query.permanent !== '1') {
+      await db.product.update({ where: { id: productId }, data: { isActive: false } });
+      res.sendStatus(204); return;
+    }
+    await db.$transaction(async tx => {
+      await tx.product.findUniqueOrThrow({ where: { id: productId } });
+      const used = await tx.orderItem.count({ where: { variant: { productId } } });
+      if (used) throw new HttpError(409, 'Sản phẩm đã có trong ' + used + ' dòng đơn hàng nên không xóa được (để giữ lịch sử đơn). Hãy dùng “Ẩn khỏi cửa hàng”.');
+      await tx.productLink.deleteMany({ where: { OR: [{ productId }, { linkedId: productId }] } });
+      await tx.productVariant.deleteMany({ where: { productId } });
+      await tx.product.delete({ where: { id: productId } });
+    });
     res.sendStatus(204);
   });
   api.post('/admin/products/:id/variants', async (req, res) => res.status(201).json(await db.productVariant.create({
@@ -340,8 +395,14 @@ export function createApp() {
   api.patch('/admin/products/:id/variants/:variantId', async (req, res) => res.json(
     await updateVariant(id.parse(req.params.id), id.parse(req.params.variantId), variantPatch.parse(req.body)),
   ));
+  // Mặc định là ngừng bán. ?permanent=1: xóa hẳn phân loại chưa từng được đặt.
   api.delete('/admin/products/:id/variants/:variantId', async (req, res) => {
-    await removeVariant(id.parse(req.params.id), id.parse(req.params.variantId));
+    const productId = id.parse(req.params.id), variantId = id.parse(req.params.variantId);
+    if (req.query.permanent !== '1') { await removeVariant(productId, variantId); res.sendStatus(204); return; }
+    const used = await db.orderItem.count({ where: { variantId } });
+    if (used) throw new HttpError(409, 'Phân loại đã có trong ' + used + ' dòng đơn hàng nên không xóa được. Hãy dùng “Ngừng bán”.');
+    const removed = await db.productVariant.deleteMany({ where: { id: variantId, productId } });
+    if (!removed.count) throw new HttpError(404, 'Không tìm thấy phân loại.');
     res.sendStatus(204);
   });
   api.get('/admin/orders', async (req, res) => {
@@ -353,7 +414,7 @@ export function createApp() {
       paymentStatus: filter.paymentStatus, paymentMethod: filter.paymentMethod,
       ...(filter.deliveryDate ? { preferredDelivery: { gte: dayStart(filter.deliveryDate).toISOString(), lt: addDays(dayStart(filter.deliveryDate), 1).toISOString() } } : {}),
       ...(filter.date ? { createdAt: { gte: dayStart(filter.date), lt: addDays(dayStart(filter.date), 1) } } : {}),
-      ...(filter.q ? { OR: [{ code: { contains: filter.q.toUpperCase() } }, { phone: { contains: filter.q } }] } : {}),
+      ...(filter.q ? { OR: [{ code: { contains: filter.q.toUpperCase() } }, { phone: { contains: filter.q } }, { customerName: { contains: filter.q } }, { email: { contains: filter.q.toLowerCase() } }] } : {}),
     };
     const [orders, total] = await Promise.all([
       db.order.findMany({ where, include: orderDetails, orderBy: { createdAt: 'desc' }, take: 30, skip: (filter.page - 1) * 30 }),
@@ -370,17 +431,27 @@ export function createApp() {
     const { from, to } = range.parse(req.query);
     res.json(await overview(from, to));
   });
+  // Ghi chú nội bộ, ưu tiên cá sống, và sửa thông tin nhận hàng (chỉ khi đơn chưa giao xong / chưa hủy).
+  const recipientFields = { customerName: 'tên người nhận', phone: 'số điện thoại', email: 'email', address: 'địa chỉ', preferredDelivery: 'giờ nhận mong muốn', note: 'ghi chú giao hàng' } as const;
   api.patch('/admin/orders/:id/details', async (req, res) => {
-    const data = z.object({ internalNote: clean(600).optional(), hasLiveFish: z.literal(true).optional() }).parse(req.body);
+    const data = z.object({
+      internalNote: clean(600).optional(), hasLiveFish: z.literal(true).optional(),
+      customerName: required(100).optional(), phone: phone.optional(),
+      email: z.union([z.literal(''), z.string().trim().toLowerCase().email('Email không hợp lệ.').max(200)]).optional(),
+      address: required(400).optional(), note: clean(500).optional(),
+      preferredDelivery: z.union([z.literal(''), z.string().datetime({ offset: true })]).optional(),
+    }).parse(req.body);
     const orderId = id.parse(req.params.id);
     const order = await db.$transaction(async tx => {
       const previous = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+      const changed = (Object.keys(recipientFields) as (keyof typeof recipientFields)[]).filter(key => data[key] !== undefined && data[key] !== previous[key]);
+      if (changed.length && ['DELIVERED', 'CANCELLED'].includes(previous.status)) throw new HttpError(409, 'Đơn đã giao xong hoặc đã hủy nên không sửa thông tin nhận hàng được.');
       const updated = await tx.order.update({ where: { id: orderId }, data, include: orderDetails });
-      if (updated.internalNote !== previous.internalNote || updated.hasLiveFish !== previous.hasLiveFish) await tx.orderStatusLog.create({ data: {
-        orderId, fromStatus: previous.status, toStatus: updated.status, action: 'note',
-        detail: updated.internalNote !== previous.internalNote ? 'Ghi chú nội bộ: ' + updated.internalNote : 'Đánh dấu ưu tiên cá sống',
-      } });
-      if (updated.hasLiveFish !== previous.hasLiveFish) await tx.outboxEvent.create({
+      const log = (detail: string) => tx.orderStatusLog.create({ data: { orderId, fromStatus: previous.status, toStatus: updated.status, action: 'note', detail } });
+      if (updated.internalNote !== previous.internalNote) await log('Ghi chú nội bộ: ' + updated.internalNote);
+      if (updated.hasLiveFish !== previous.hasLiveFish) await log('Đánh dấu ưu tiên cá sống');
+      if (changed.length) await log('Sửa ' + changed.map(key => recipientFields[key]).join(', '));
+      if (updated.hasLiveFish !== previous.hasLiveFish || changed.length) await tx.outboxEvent.create({
         data: { kind: 'details', payload: { code: updated.code, status: updated.status, notify: false } },
       });
       return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: orderDetails });
@@ -412,7 +483,11 @@ export function createApp() {
     } else if (error instanceof HttpError) {
       res.status(error.status).json({ message: error.message });
     } else if (error instanceof Prisma.PrismaClientKnownRequestError && ['P2002', 'P2025'].includes(error.code)) {
-      res.status(error.code === 'P2002' ? 409 : 404).json({ message: error.code === 'P2002' ? 'Giá trị đã tồn tại.' : 'Không tìm thấy dữ liệu.' });
+      // Báo rõ trường bị trùng (SKU, đường dẫn, mã giảm giá…) thay vì một câu chung chung.
+      const target = String((error.meta as { target?: unknown } | undefined)?.target ?? '');
+      const duplicate = /sku/i.test(target) ? 'Mã SKU này đã có ở phân loại khác.' : /slug/i.test(target) ? 'Đường dẫn (slug) này đã được sản phẩm khác dùng.'
+        : /code/i.test(target) ? 'Mã này đã tồn tại.' : /email/i.test(target) ? 'Email này đã được dùng.' : 'Giá trị đã tồn tại.';
+      res.status(error.code === 'P2002' ? 409 : 404).json({ message: error.code === 'P2002' ? duplicate : 'Không tìm thấy dữ liệu.' });
     } else if (error?.type === 'entity.too.large') {
       res.status(413).json({ message: 'Nội dung yêu cầu vượt giới hạn.' });
     } else if (error instanceof SyntaxError && 'body' in error) {

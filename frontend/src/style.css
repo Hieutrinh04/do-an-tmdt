@@ -359,3 +359,51 @@ tbody tr:hover{background:#f5faf7}
 /* Header gọn hơn trên màn hình vừa để không tràn ngang */
 .nav{gap:.6rem}.brand{flex:none}.menu{min-width:0;gap:.5rem}
 @media(max-width:1180px){.menu nav a{padding:.4rem .55rem;font-size:.86rem}.header-search input{width:8rem}}
+
+/* ===== Sửa lỗi giao diện cửa hàng (11/2026) ===== */
+/* Lớp .outline của dự án trùng tên tiện ích "outline" của Tailwind (vẽ thêm vòng viền đen quanh nút). */
+.outline:not(:focus-visible){outline:none}
+/* Nhãn "-%" giảm giá: góc phải trên, không bị kéo giãn cả hàng và không bị nhãn tồn kho che chữ. */
+.product-art .badge.sale{left:auto;right:.65rem;padding:.28rem .6rem;background:#c2381c;color:#fff;font-weight:800}
+.product-art .badge.sale::before{display:none}
+/* Bỏ miếng "băng dính" trên thẻ giá (trông như ô xám lỗi trên ảnh). */
+.tank-tag::before,.price-tag::before{display:none}
+/* Khu mua hàng: ô số lượng + 2 nút trên một hàng, tự xuống dòng khi hẹp. */
+.buy{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem}
+.buy label{width:5.5rem;flex:none}
+.buy .button,.buy .outline{flex:0 1 auto}
+@media(max-width:480px){.buy .button,.buy .outline{flex:1 1 9rem}}
+/* Giá ở trang chi tiết: thẻ giá vàng gọn, nhãn tiết kiệm nằm cạnh. */
+.price-row{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem .8rem}
+.price-row .price{justify-self:auto}
+.price-row .badge.sale{margin:0;font-size:.8rem;padding:.35rem .7rem}
+/* Ảnh sản phẩm bám theo khi cuộn trên máy tính. */
+@media(min-width:901px){.detail-gallery{position:sticky;top:90px}}
+/* Thông số nuôi: mục chữ dài chiếm cả hàng. */
+.care-grid .wide{grid-column:1/-1}
+/* Tiêu đề trong khung trắng nhỏ lại cho cân. */
+.panel>h2,.cart-summary>h2,.panel .stack>h2{font-size:clamp(1.3rem,2.2vw,1.65rem)}
+/* Thanh sắp xếp trang danh mục. */
+.category-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;margin:1rem 0 1.4rem;
+  padding:.7rem .9rem;background:#fff;border:1px solid var(--line);border-radius:12px}
+.category-toolbar label{display:flex;align-items:center;gap:.6rem;font-size:.88rem}
+.category-toolbar select{width:auto;min-width:11rem;padding:.5rem .7rem}
+.category-toolbar p{margin:0;color:var(--muted);font-size:.9rem;font-weight:600}
+/* Danh sách trong trang chính sách: hiện dấu đầu dòng (Tailwind xóa mặc định). */
+.prose-block ul{list-style:disc}.prose-block ol{list-style:decimal;padding-left:1.4rem;display:grid;gap:.4rem}
+/* Trang 404. */
+.not-found{display:grid;justify-items:start;gap:1rem;max-width:40rem;padding-block:clamp(2.5rem,8vw,5rem)}
+.not-found p{color:var(--muted);margin:0}
+.not-found .actions{display:flex;flex-wrap:wrap;gap:.6rem}
+/* Điện thoại: danh mục nổi bật 2 cột gọn, footer 2 cột, tổng giỏ rõ ràng. */
+@media(max-width:680px){
+  .category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem}
+  .category-card{padding:.5rem .5rem .7rem}
+  .category-card h3{font-size:1rem;margin-top:.5rem}
+  .category-card .text-button{display:none}
+  .category-card.skeleton{height:190px}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:1.5rem 1rem}
+  .footer-grid>:first-child,.footer-grid>:last-child{grid-column:1/-1}
+  .category-toolbar label{flex:1}.category-toolbar select{flex:1;min-width:0}
+}
+.coupon .outline,.coupon-row .outline{align-self:flex-end;min-height:0;height:46px;padding-block:0}

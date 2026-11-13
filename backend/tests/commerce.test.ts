@@ -234,7 +234,7 @@ test('chi tiết tài khoản: đổi tên, đổi email cần mật khẩu, đ�
   await api.post('/api/account/password').set(bearer(token)).send({ currentPassword: 'matkhau123', newPassword: 'matkhaumoi456' }).expect(200);
   expect((await api.post('/api/account/login').send({ email: 'moi@example.com', password: 'matkhau123' })).status).toBe(401);
   await api.post('/api/account/login').send({ email: 'moi@example.com', password: 'matkhaumoi456' }).expect(200);
-});
+}, 20000); // Nhiều lần băm bcrypt, máy chậm có thể vượt 5 giây mặc định.
 
 test('quên mật khẩu: luôn trả lời như nhau, token lưu dạng băm, dùng được một lần và hết hạn sau 1 giờ', async () => {
   await register('quen@example.com').expect(201);

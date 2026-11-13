@@ -63,6 +63,12 @@ services:
       PAYMENT_SANDBOX: ${PAYMENT_SANDBOX:-false}
       META_PAGE_ACCESS_TOKEN: ${META_PAGE_ACCESS_TOKEN:-}
       META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v23.0}
+      # Email do backend tự gửi (đặt lại mật khẩu, chào mừng tài khoản mới); email đơn hàng do n8n gửi.
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
       TZ: Asia/Ho_Chi_Minh
     volumes:
       - store-data:/data

@@ -54,6 +54,52 @@ test('PATCH retains catalog and variant flags when updating only stock or images
   expect(patched.body).toMatchObject({ isActive: false, stock: 10, minQty: 6, gender: 'Cái', unit: 'con' });
 });
 
+test('xóa vĩnh viễn sản phẩm/phân loại chưa có đơn; đã có đơn thì chỉ ẩn; báo rõ trùng SKU và slug', async () => {
+  const auth = { Authorization: 'Bearer ' + token };
+  const slug = 'xoa-thu-' + Date.now();
+  const created = await api.post('/api/admin/products').set(auth).send({ name: 'Xóa thử', slug, description: 'Sản phẩm thử xóa', price: 5000, category: 'Thiết bị', images: ['/catalog/betta.svg'] }).expect(201);
+  const sku = 'XOA-' + Date.now();
+  const v1 = await api.post('/api/admin/products/' + created.body.id + '/variants').set(auth).send({ color: 'A', size: '1', sku, stock: 3 }).expect(201);
+  await api.post('/api/admin/products/' + created.body.id + '/variants').set(auth).send({ color: 'B', size: '1', sku: 'XOA2-' + Date.now(), stock: 3 }).expect(201);
+  const dupSku = await api.post('/api/admin/products/' + created.body.id + '/variants').set(auth).send({ color: 'C', size: '1', sku, stock: 1 }).expect(409);
+  expect(dupSku.body.message).toMatch(/SKU/);
+  const dupSlug = await api.post('/api/admin/products').set(auth).send({ name: 'Trùng', slug, description: 'x', price: 1, category: 'Thiết bị', images: ['/catalog/betta.svg'] }).expect(409);
+  expect(dupSlug.body.message).toMatch(/slug/);
+  // Xóa hẳn một phân loại rồi cả sản phẩm (chưa có đơn).
+  await api.delete('/api/admin/products/' + created.body.id + '/variants/' + v1.body.id + '?permanent=1').set(auth).expect(204);
+  expect(await db.productVariant.count({ where: { id: v1.body.id } })).toBe(0);
+  await api.delete('/api/admin/products/' + created.body.id + '?permanent=1').set(auth).expect(204);
+  expect(await db.product.count({ where: { id: created.body.id } })).toBe(0);
+  // Sản phẩm đã có đơn: không xóa được, ẩn vẫn được.
+  await post().expect(201);
+  const sold = await db.productVariant.findUniqueOrThrow({ where: { id: variant } });
+  const blocked = await api.delete('/api/admin/products/' + sold.productId + '?permanent=1').set(auth).expect(409);
+  expect(blocked.body.message).toMatch(/đơn hàng/);
+  await api.delete('/api/admin/products/' + sold.productId + '/variants/' + variant + '?permanent=1').set(auth).expect(409);
+  expect(await db.product.count({ where: { id: sold.productId } })).toBe(1);
+});
+
+test('admin sửa thông tin nhận hàng có kiểm tra; đơn COD giao xong tự ghi đã thu tiền; khóa sửa khi đã giao', async () => {
+  const auth = { Authorization: 'Bearer ' + token };
+  const { body } = await post().expect(201);
+  const created = await db.order.findUniqueOrThrow({ where: { code: body.code } });
+  const details = (data: object) => api.patch('/api/admin/orders/' + created.id + '/details').set(auth).send(data);
+  const bad = await details({ phone: '12345' }).expect(422);
+  expect(bad.body.message).toMatch(/Số điện thoại/);
+  const when = new Date(Date.now() + 2 * 86400000).toISOString();
+  const edited = await details({ customerName: 'Lê Bình', phone: '0912 345 678', address: '99 Lê Lợi, Quận 1, Hồ Chí Minh', email: 'binh@example.com', preferredDelivery: when, note: 'Gọi trước' }).expect(200);
+  expect(edited.body).toMatchObject({ customerName: 'Lê Bình', phone: '0912345678', email: 'binh@example.com', note: 'Gọi trước' });
+  expect(edited.body.history.at(-1).detail).toMatch(/Sửa tên người nhận, số điện thoại/);
+  const events = await db.outboxEvent.findMany({ where: { kind: 'details' } });
+  expect(events.filter(event => (event.payload as { code?: string }).code === body.code)).toHaveLength(1);
+  for (const status of ['CONFIRMED', 'SHIPPING', 'DELIVERED']) await change(created.id, status).expect(200);
+  const delivered = await db.order.findUniqueOrThrow({ where: { id: created.id }, include: { history: true } });
+  expect(delivered.paymentStatus).toBe('PAID');
+  expect(delivered.history.some(row => row.action === 'payment' && /COD/.test(row.detail))).toBe(true);
+  await details({ address: 'Địa chỉ khác' }).expect(409);
+  await details({ internalNote: 'Khách hài lòng' }).expect(200);
+});
+
 test('upload lưu hai WebP, chặn traversal và chỉ ghi nguồn ảnh đang dùng', async () => {
   await mkdir(resolve('data'), { recursive: true });
   const directory = await mkdtemp(resolve('data', 'long-fish-uploads-'));
@@ -219,6 +265,22 @@ test('bot hiểu từ khóa cá cảnh không dấu và chỉ gợi ý sản ph�
   } finally { messages.mockRestore(); }
   expect((await db.conversationState.findUniqueOrThrow({ where: { psid } })).selection)
     .toEqual({ candidates: ['guppy-kiem-thu'] });
+});
+
+test('admin summary có số đơn theo trạng thái, tồn thấp; danh sách khách gộp theo SĐT và tìm được theo tên', async()=>{
+  const auth={Authorization:'Bearer '+token};
+  const phone='0987'+String(Date.now()).slice(-6);
+  await api.post('/api/orders').send({...request(),customerName:'Trần Khách Gộp',phone}).expect(201);
+  const summary=await api.get('/api/admin/orders/summary').set(auth).expect(200);
+  expect(summary.body.statusCounts.PENDING).toBe(await db.order.count({where:{status:'PENDING'}}));
+  expect(summary.body.lowStockCount).toBeGreaterThanOrEqual(0);
+  expect(typeof summary.body.openHandoffs).toBe('number');
+  await api.get('/api/admin/customers').expect(401);
+  const customers=await api.get('/api/admin/customers').set(auth).query({q:phone}).expect(200);
+  expect(customers.body.customers).toHaveLength(1);
+  expect(customers.body.customers[0]).toMatchObject({phone,orders:1,open:1,hasAccount:false});
+  const byName=await api.get('/api/admin/orders').set(auth).query({q:'Khách Gộp'}).expect(200);
+  expect(byName.body.total).toBe(1);
 });
 
 test('admin summary/filters reflect pending, payment and requested delivery date', async()=>{

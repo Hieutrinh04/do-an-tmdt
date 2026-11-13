@@ -105,3 +105,40 @@ test('cá lóc (loài không bán) không bị khớp nhầm với lọc thác; 
   await handle({mid:randomUUID(),psid:String(++serial),text:'mua loc thac'});
   expect(JSON.stringify(sent.message.mock.calls)).toContain('Lọc thác');
 });
+
+test('chọn phân loại: chỉ gợi ý lựa chọn còn hàng, tự chọn khi chỉ còn một, bấm thẳng tổ hợp còn bán', async () => {
+  const product = await db.product.findUniqueOrThrow({ where: { slug: 'guppy-fancy' }, include: { variants: { orderBy: { gender: 'asc' } } } });
+  const original = product.variants.map(row => ({ id: row.id, stock: row.stock }));
+  const yellow = product.variants.filter(row => row.color === 'Vàng');
+  const mix = product.variants.filter(row => row.color === 'Mix');
+  expect(yellow.length).toBeGreaterThan(1);
+  const keep = yellow[yellow.length - 1];
+  const last = () => JSON.stringify(sent.message.mock.calls.at(-1));
+  const say = async (psid: string, text: string) => { sent.message.mockClear(); await handle({ mid: randomUUID(), psid, text }); return JSON.stringify(sent.message.mock.calls); };
+  try {
+    for (const row of product.variants) await db.productVariant.update({ where: { id: row.id }, data: { stock: row.color === 'Mix' || row.id === keep.id ? 20 : 0 } });
+    // Màu Vàng chỉ còn đúng một phân loại: chọn Vàng là bot hỏi số lượng luôn, không bắt chọn cỡ/giới tính nữa.
+    let psid = String(++serial);
+    await say(psid, 'mua Guppy Fancy');
+    expect(last()).toContain('"title":"Vàng"');
+    const answer = await say(psid, 'Vàng');
+    expect(answer).toContain('Bạn muốn đặt bao nhiêu');
+    for (const row of yellow.filter(item => item.id !== keep.id && item.gender !== keep.gender)) expect(answer).not.toContain('"title":"' + row.gender + '"');
+    expect(await say(psid, '2')).toContain('variant=' + keep.id);
+    // Bấm thẳng nút tổ hợp "Mix / 3–4 cm / …".
+    psid = String(++serial);
+    await say(psid, 'mua Guppy Fancy');
+    const target = mix[0];
+    expect(await say(psid, target.color + ' / ' + target.size + ' / ' + target.gender)).toContain('Bạn muốn đặt bao nhiêu');
+    // Hết cả màu Vàng: báo hết và đưa nút tổ hợp còn bán, không hỏi lại từng bước.
+    await db.productVariant.update({ where: { id: keep.id }, data: { stock: 0 } });
+    psid = String(++serial);
+    await say(psid, 'mua Guppy Fancy');
+    expect(last()).not.toContain('"title":"Vàng"');
+    const soldOut = await say(psid, 'Vàng');
+    expect(soldOut).toContain('Màu Vàng đã hết');
+    expect(soldOut).toContain('"title":"' + (target.color + ' / ' + target.size + ' / ' + target.gender).slice(0, 20) + '"');
+  } finally {
+    for (const row of original) await db.productVariant.update({ where: { id: row.id }, data: { stock: row.stock } });
+  }
+});

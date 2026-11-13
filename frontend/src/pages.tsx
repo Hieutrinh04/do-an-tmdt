@@ -35,10 +35,10 @@ export function CategoryPage() {
   return <section className="shell section">
     <Breadcrumb trail={[{ name: 'Trang chủ', to: '/' }, { name: category?.name || 'Danh mục' }]} />
     <header className="category-head"><h1>{category?.name || 'Danh mục'}</h1>{category && <p>{category.description}</p>}</header>
-    <div className="catalog-filters">
+    <div className="category-toolbar">
       <label>Sắp xếp theo<select value={sort} onChange={event => setSort(event.target.value)}>
         <option value="default">Mặc định</option><option value="asc">Giá tăng dần</option><option value="desc">Giá giảm dần</option></select></label>
-      <p className="muted">{rows.length ? rows.length + ' sản phẩm' : ''}</p>
+      <p>{rows.length ? rows.length + ' sản phẩm' : ''}</p>
     </div>
     {status && <p role="status">{status}</p>}
     <div className="grid-products">{sorted.map(product => <ProductCard key={product.id} product={product} />)}</div>

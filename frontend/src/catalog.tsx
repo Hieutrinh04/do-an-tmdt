@@ -123,6 +123,9 @@ export function ProductPage() {
     return () => { alive = false; };
   }, [product?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!product) return <div className="shell section" role={error ? 'alert' : 'status'}>{error || 'Đang tải sản phẩm…'}</div>;
+  // Không lặp lại sản phẩm đã có trong mục "Bạn có thể thích hơn" / "Mua kèm".
+  const shown = new Set([...(product.upSells ?? []), ...(product.crossSells ?? [])].map(item => item.id));
+  const relatedRest = related.filter(row => !shown.has(row.id));
   const colors = [...new Set(product.variants.map(v => v.color))];
   const byColor = product.variants.filter(v => v.color === variant?.color);
   const sizes = [...new Set(byColor.map(v => v.size))];
@@ -143,12 +146,12 @@ export function ProductPage() {
   return <section className="shell section">
     <Breadcrumb trail={[{ name: 'Trang chủ', to: '/' }, ...(group ? [{ name: group.name, to: '/danh-muc/' + group.slug }] : []), { name: product.name }]} />
     <div className="detail">
-      <div><div className="product-art tank"><ProductImage slug={product.slug} source={product.images[photo]} alt={product.name} loading="eager" /></div>
+      <div className="detail-gallery"><div className="product-art tank"><ProductImage slug={product.slug} source={product.images[photo]} alt={product.name} loading="eager" /></div>
         <PhotoCredit slug={product.slug} file={product.images[photo]} />
         {product.isLiveFish && <small className="photo-note">Ảnh minh họa dòng cá; màu sắc và hoa văn từng con có thể khác nhau.</small>}
         {product.images.length > 1 && <div className="filters">{product.images.map((src, i) => <button key={i} aria-pressed={i === photo} onClick={() => setPhoto(i)}>Ảnh {i + 1}</button>)}</div>}</div>
       <div className="detail-copy"><p className="eyebrow">{product.category}</p><h1>{product.name}</h1>
-        <p className="price"><PriceTag regular={variant?.regularPrice ?? variant?.priceOverride ?? product.price} unit={variant?.unitPrice ?? variant?.priceOverride ?? product.price} />{variant?.onSale && variant.regularPrice != null && variant.unitPrice != null && <span className="badge sale">Tiết kiệm {money(variant.regularPrice - variant.unitPrice)} (-{Math.round((1 - variant.unitPrice / variant.regularPrice) * 100)}%)</span>}</p><p>{product.description}</p>
+        <div className="price-row"><p className="price"><PriceTag regular={variant?.regularPrice ?? variant?.priceOverride ?? product.price} unit={variant?.unitPrice ?? variant?.priceOverride ?? product.price} /></p>{variant?.onSale && variant.regularPrice != null && variant.unitPrice != null && <span className="badge sale">Tiết kiệm {money(variant.regularPrice - variant.unitPrice)} (-{Math.round((1 - variant.unitPrice / variant.regularPrice) * 100)}%)</span>}</div><p>{product.description}</p>
         <fieldset><legend>Dòng / màu</legend><div className="filters">{colors.map(color => <button key={color} aria-pressed={color === variant?.color} className={color === variant?.color ? 'chosen' : ''} onClick={() => select(product.variants.filter(v => v.color === color))}>{color}</button>)}</div></fieldset>
         <fieldset><legend>Cỡ</legend><div className="filters">{sizes.map(size => <button key={size} aria-pressed={size === variant?.size} className={size === variant?.size ? 'chosen' : ''} onClick={() => select(byColor.filter(v => v.size === size))}>{size}</button>)}</div></fieldset>
         {product.isLiveFish && <fieldset><legend>Giới tính</legend><div className="filters">{bySize.map(v => <button key={v.id} aria-pressed={v.id === variantId} className={v.id === variantId ? 'chosen' : ''} onClick={() => select([v])}>{v.gender}</button>)}</div></fieldset>}
@@ -166,7 +169,7 @@ export function ProductPage() {
           {Object.entries({ 'Tên khoa học': product.careInfo.scientificName, 'Cỡ trưởng thành': product.careInfo.adultCm + ' cm',
             'Nhiệt độ': product.careInfo.temperature, 'pH': product.careInfo.ph, 'Bể tham khảo': 'Từ ' + product.careInfo.minTankLiters + ' L',
             'Độ khó': product.careInfo.difficulty, 'Tính cách': product.careInfo.temperament, 'Thức ăn': product.careInfo.food })
-            .map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>
+            .map(([key, value]) => <div key={key} className={key === 'Tính cách' || key === 'Thức ăn' ? 'wide' : undefined}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>
           {product.careInfo.source && /^https:\/\//.test(product.careInfo.source) && <a className="text-button" href={product.careInfo.source}>Nguồn tham khảo</a>}</div>}
       </div>
     </div>
@@ -174,8 +177,8 @@ export function ProductPage() {
       <div className="mini-grid">{product.crossSells.map(item => <LinkedCard key={item.id} item={item} />)}</div></section>}
     {!!product.upSells?.length && <section className="related" aria-labelledby="up-title"><h2 id="up-title">Bạn có thể thích hơn</h2>
       <div className="mini-grid">{product.upSells.map(item => <LinkedCard key={item.id} item={item} />)}</div></section>}
-    {related.length > 0 && <section className="related" aria-labelledby="related-title"><h2 id="related-title">Sản phẩm liên quan</h2>
-      <div className="grid-products">{related.map(row => <ProductCard key={row.id} product={row} />)}</div></section>}
+    {relatedRest.length > 0 && <section className="related" aria-labelledby="related-title"><h2 id="related-title">Sản phẩm liên quan</h2>
+      <div className="grid-products">{relatedRest.map(row => <ProductCard key={row.id} product={row} />)}</div></section>}
   </section>;
 }
 

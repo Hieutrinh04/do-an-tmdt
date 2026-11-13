@@ -145,16 +145,17 @@ test('checkout COD/VietQR, admin fulfillment, cancellation and tracking', async 
   await expect(page.getByText(money(metrics.todayRevenue), { exact: true }).first()).toBeVisible();
   await expect(page.getByText(money(metrics.monthRevenue), { exact: true }).first()).toBeVisible();
   await capture(page, info, 'dashboard');
-  await page.getByRole('link', { name: 'Đơn hàng', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Quản trị' }).getByRole('link', { name: /^Đơn hàng/ }).click();
   await page.getByRole('button', { name: cod, exact: true }).click();
+  const drawer = page.getByRole('dialog');
   await capture(page, info, 'admin');
-  for (const name of ['Đã xác nhận', 'Đang giao', 'Đã giao']) await page.getByRole('button', { name, exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Đóng', exact: true })).toBeEnabled();
-  await expect(page.getByText(/· Đã giao$/)).toBeVisible();
-  await page.getByRole('button', { name: 'Đóng', exact: true }).click();
+  for (const name of ['Xác nhận đơn', 'Bắt đầu giao', 'Đã giao xong']) await drawer.getByRole('button', { name, exact: true }).click();
+  await expect(drawer.locator('.ad-pill--delivered')).toBeVisible();
+  await drawer.getByRole('button', { name: 'Đóng', exact: true }).click();
   await page.getByRole('button', { name: qr, exact: true }).click();
   await expect(page.getByRole('heading', { name: qr, exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Đã hủy', exact: true }).click();
+  page.once('dialog', dialog => void dialog.accept());
+  await drawer.getByRole('button', { name: 'Hủy đơn', exact: true }).click();
   await expect.poll(stock).toBe(before + 1);
   await page.goto('/track?code=' + cod);
   const field = page.getByLabel('Số điện thoại đặt hàng');
@@ -172,12 +173,12 @@ test('admin drags in two photos, reorders, selects cover and removes', async ({ 
   await login(page);
   await page.goto('/admin/products');
   const slug = 'demo-playwright-' + info.project.name + '-' + Date.now();
-  const form = page.locator('details').filter({ has: page.getByText('Thêm sản phẩm', { exact: true }) }).first();
-  await form.locator('summary').click();
+  await page.getByRole('button', { name: 'Thêm sản phẩm' }).click();
+  const form = page.getByRole('dialog');
   await form.getByLabel('Tên sản phẩm').fill('TEST ảnh ' + info.project.name);
   await form.getByLabel('Đường dẫn (slug)').fill(slug);
   await form.getByLabel('Danh mục').fill('Kiểm thử');
-  await form.getByLabel('Giá (₫)').fill('1000');
+  await form.getByLabel('Giá gốc (₫)').fill('1000');
   await form.getByLabel('Mô tả').fill('TEST Playwright');
   const png = await sharp({ create: { width: 800, height: 600, channels: 3, background: '#507a82' } }).png().toBuffer();
   const data = await page.evaluateHandle(base64 => {
@@ -205,10 +206,12 @@ test('admin drags in two photos, reorders, selects cover and removes', async ({ 
   await page.goto('/credits');
   await expect(page.locator('article').filter({ hasText: 'TEST ảnh ' + info.project.name })).toContainText('Ảnh do Long Fish cung cấp');
   await page.goto('/admin/products');
-  const saved = page.locator('details.admin-list').filter({ has: page.locator('summary').filter({ hasText: 'TEST ảnh ' + info.project.name }) }).first();
-  await saved.locator('summary').first().click();
-  await saved.getByRole('button', { name: 'Ẩn', exact: true }).click();
-  await expect(saved.locator('summary').first()).toContainText('Đã ẩn');
+  await page.getByLabel('Tìm sản phẩm').fill(slug);
+  await page.getByRole('button', { name: 'TEST ảnh ' + info.project.name, exact: true }).click();
+  const saved = page.getByRole('dialog');
+  await saved.getByRole('tab', { name: 'Thông tin, giá, ảnh' }).click();
+  await saved.getByRole('button', { name: 'Ẩn khỏi cửa hàng', exact: true }).click();
+  await expect(saved.getByText('Đang ẩn', { exact: true })).toBeVisible();
 });
 
 test('giá khuyến mãi, thêm vào giỏ, mini cart, giỏ hàng với mã giảm giá và phí giao theo tỉnh (chỉ đọc, không đặt đơn)', async ({ page }) => {
